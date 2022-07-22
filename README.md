@@ -25,12 +25,24 @@ service balance for all partner, provider, end user, ...
     - [Solution get data trans](#SolutionGetDataTrans)
 
 
+- [System design system get data for several billion user](#SystemDesignSystemGetDataForSeveralBillionUser)
+  - [Problem system high get data](#ProblemSystemHighGetData)
+    - [Problem high qps for io DB](#ProblemHighQpsForIoDB)
+    - [Problem overload request to DB when invalidate cache](#ProblemOverloadRequestToDBWhenInvalidateCache)
+  - [Solution system high get data](#SolutionSystemHighGetData)
+    - [Solution get from cache](#SolutionGetFromCache)
+    - [Solution update cache](#SolutionUpdateCache)
+    - [Solution only handle one request update cache for one key in race conditions](#SolutionOnlyHandleOneRequestUpdateCacheForOneKeyInRaceConditions)
+    - [Solution smart select DB](#SolutionSmartSelectDB)
 
-
-
-
-
-
+- [System divide infra by region](#SystemDivideInfraByRegion)
+- [Problem divide infra by region](#ProblemDivideInfraByRegion)
+  - [Problem DB divide infra by region](#ProblemDBivideInfraByRegion)
+  - [Problem cache divide infra by region](#ProblemCacheivideInfraByRegion)
+- [Solution divide infra by region](#SolutionDivideInfraByRegion)
+  - [Solution DB divide infra by region](#SolutionDBivideInfraByRegion)
+  - [Solution cache divide infra by region](#SolutionCacheivideInfraByRegion)
+- [Service cache is independence between services](#ServiceCacheIsIndependenceBetweenServices)
 
 
 ## Review characteristics balance service in payment gateway <a name="ReviewCharacteristicsBalanceServiceInPaymentGateway"></a>
@@ -77,7 +89,7 @@ I chose solution 2. The reasons I chose it:
 
 ## Detail solution <a name="DetailSolution"></a>
 Characteristics of the number of partners < 10000 (this is a very large number, I need 2 parts). </br>
-1) Part one is the part of managing partner sharding, it will regulate and manage which partners exist on which sharding </br>
+1) Part one is the part of managing partner sharding, it will regulate and manage which partners + region exist on which sharding </br>
 2) Part two is the sharding data part, it will shard and contain balance partner information. Struct DB sharding requires enough basic fields, extension does not edit fields and adds data and extended json objects. This is an important thing with manual sharding systems. </br>
 
 ## Why i don't use auto sharding <a name="WhyIDontUseAutoSharding"></a>
@@ -105,5 +117,42 @@ The key here is that I need mysql to be lightweight to ensure system performance
 ## Detail solution save data <a name="DetailSolutionSaveData"></a>
 ![](img_readme/move_db_from_mysql_to_cassandra.png)
 
+
+## System design system get data for several billion user <a name="SystemDesignSystemGetDataForSeveralBillionUser"></a>
+A system that pays api get data for billions of users is a difficult system, has many problems and needs to be calculated from an overview to meticulously each problem for the system to work stably. I will dissect each problem encountered and the solution in the following section. </br>
+
+## Problem system high get data <a name="ProblemSystemHighGetData"></a>
+## Problem high qps for io DB <a name="ProblemHighQpsForIoDB"></a>
+With billions of users online and getting data, the amount of qps can exceed the processing capacity of any DB, which is the first problem with most high-load systems. </br>
+
+## Problem overload request to DB when invalidate cache <a name="ProblemOverloadRequestToDBWhenInvalidateCache"></a>
+![](img_readme/overload_cpu_when_invalidate_cache.png)
+With  data cache, when a cache invalidate, the common solution is to get and update the cache. At the breaking load threshold, this is fine. But at high load thresholds, there are cache keys that can make a large number of requests to a DB in a short time (until a new cache is available). It is DB overload. </br>
+
+This is easy to imagine when you have 10000 get commands almost simultaneously into 1 key cache, at the same time that key cache invalidate. If handled in the usual way, you will almost have 10000 requests to the DB at the same time. </br>
+
+
+
+## Solution system high get data <a name="SolutionSystemHighGetData"></a>
+## Solution get from cache <a name="SolutionGetFromCache"></a>
+![](img_readme/get_data_from_cache.png)
+
+In general, with billions of users and extremely large rqs, it is almost very limited to interact directly with the DB. Here, the receive will be taken from the cache. </br>
+
+There exist 2 cases:
+1) Data exist in cahce, get data and response </br>
+2) Data not exits, call to update service and return the result. </br>
+
+## Solution update cache <a name="SolutionUpdateCache"></a>
+Service update cache must ensure: there are 1000 requests to update cache with the same cache key at the same time, only process one request, only perform 1 process query to DB and update cache and return data for that request. Other requests will have to wait until the next query. </br>
+
+In this problem, the number of race conditions is not large. With a large number of race conditions, service get cache and service update cache must be isolated. They just transmit data to each other via the message queue. </br>
+
+## Solution only handle one request update cache for one key in race conditions <a name="SolutionOnlyHandleOneRequestUpdateCacheForOneKeyInRaceConditions"></a>
+![](img_readme/race_condition_update_cache.png)
+I use mutext lock redis to handle it. With n update cache requests with 1 cache key, the first request to be handled will get the mutex and update the cache and return the result. Other requests will wait until the next update to get the latest results (at this point the cache is valid and the lock is also released). </br>
+
+## Solution smart select DB <a name="SolutionSmartSelectDB"></a>
+I have designed:  order, log, balance DB success to be moved from mysql to cassandra. Besides, Cassandra has much better load capacity with mysql. The solution is simply to always prioritize the query in cassandra first, if not exists, switch the query to mysql. </br>
 
 
