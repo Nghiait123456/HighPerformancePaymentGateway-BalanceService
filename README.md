@@ -34,7 +34,9 @@ service balance for all partner, provider, end user, ...
     - [Solution update cache](#SolutionUpdateCache)
     - [Solution only handle one request update cache for one key in race conditions](#SolutionOnlyHandleOneRequestUpdateCacheForOneKeyInRaceConditions)
     - [Solution smart select DB](#SolutionSmartSelectDB)
-
+  - [Solution update cache from message queue](#SolutionUpdateCacheFromMessageQueue)
+  - [Solution detect new or old data from message queue](#SolutionDetectNewOrOldDataFromMessageQueue)
+  
 - [System divide infra by region](#SystemDivideInfraByRegion)
 - [Problem divide infra by region](#ProblemDivideInfraByRegion)
   - [Problem DB divide infra by region](#ProblemDBivideInfraByRegion)
@@ -43,6 +45,10 @@ service balance for all partner, provider, end user, ...
   - [Solution DB divide infra by region](#SolutionDBivideInfraByRegion)
   - [Solution cache divide infra by region](#SolutionCacheivideInfraByRegion)
 - [Service cache is independence between services](#ServiceCacheIsIndependenceBetweenServices)
+
+
+- [System loadbalance](#SystemLoadbalance)
+- [System rate limit](#SystemRateLimit)
 
 
 ## Review characteristics balance service in payment gateway <a name="ReviewCharacteristicsBalanceServiceInPaymentGateway"></a>
@@ -155,4 +161,14 @@ I use mutext lock redis to handle it. With n update cache requests with 1 cache 
 ## Solution smart select DB <a name="SolutionSmartSelectDB"></a>
 I have designed:  order, log, balance DB success to be moved from mysql to cassandra. Besides, Cassandra has much better load capacity with mysql. The solution is simply to always prioritize the query in cassandra first, if not exists, switch the query to mysql. </br>
 
+## Solution update cache from message queue <a name="SolutionUpdateCacheFromMessageQueue"></a>
+![](img_readme/message_queue_update_cache.png)
+Service listen even from DB change amount balance, amount balance place, update log to update cache respectively.
 
+## Solution detect new or old data from message queue <a name="SolutionDetectNewOrOldDataFromMessageQueue"></a>
+All columns in the DB have a column containing the timestand for created_at and updated_at, for each request in the message, always include updated_at time. </br>
+1) If updated_at event > updated_at in cache, update new cache. </br>
+2) If updated_at event < updated_at in cache, skip this event </br>
+3) If updated_at event = updated_at in cache, it is not possible to detect whether this request is new or old. Simple solution, take the initiative to get from the DB and get the latest request. </br>
+
+## System divide infra by region <a name="SystemDivideInfraByRegion"></a>
