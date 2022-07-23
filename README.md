@@ -36,7 +36,7 @@ service balance for all partner, provider, end user, ...
     - [Solution smart select DB](#SolutionSmartSelectDB)
   - [Solution update cache from message queue](#SolutionUpdateCacheFromMessageQueue)
   - [Solution detect new or old data from message queue](#SolutionDetectNewOrOldDataFromMessageQueue)
-  
+
 - [System divide infra by region](#SystemDivideInfraByRegion)
 - [Problem divide infra by region](#ProblemDivideInfraByRegion)
   - [Problem DB divide infra by region](#ProblemDBivideInfraByRegion)
@@ -44,10 +44,9 @@ service balance for all partner, provider, end user, ...
 - [Solution divide infra by region](#SolutionDivideInfraByRegion)
   - [Solution DB divide infra by region](#SolutionDBivideInfraByRegion)
   - [Solution cache divide infra by region](#SolutionCacheivideInfraByRegion)
-- [Service cache is independence between services](#ServiceCacheIsIndependenceBetweenServices)
+- [Service cache is independence between services and region](#ServiceCacheIsIndependenceBetweenServicesAndRegion)
 
-
-- [System loadbalance](#SystemLoadbalance)
+- [System load smart traffic balancer](#SystemSmartTrafficLoadbalancer)
 - [System rate limit](#SystemRateLimit)
 
 
@@ -171,4 +170,42 @@ All columns in the DB have a column containing the timestand for created_at and 
 2) If updated_at event < updated_at in cache, skip this event </br>
 3) If updated_at event = updated_at in cache, it is not possible to detect whether this request is new or old. Simple solution, take the initiative to get from the DB and get the latest request. </br>
 
+
 ## System divide infra by region <a name="SystemDivideInfraByRegion"></a>
+With a system of billions of users around the world, if there is only 1 data center, it will be a bottleneck, a whole server around the world must request to it. Even if the database bottleneck is solved, the servers in Vietnam have to go halfway around the ground to get a response from the US data center, which is a slow. </br>
+
+## Problem divide infra by region <a name="ProblemDivideInfraByRegion"></a>
+The division of data by region is a wing used by many parties. However, this subdivision will have some merge data problems, data distribution problems. Must really understand the specifics of the business to be able to decide to split the data in accordance with the characteristics of the system. </br>
+
+## Problem cache divide infra by region <a name="ProblemCacheivideInfraByRegion"></a>
+Cache is also an object that should be broken down by region for optimal speed. However, cache is less of a challenge and more difficult than splitting the DB. </br>
+
+## Solution divide infra by region <a name="SolutionDivideInfraByRegion"></a>
+## Solution DB divide infra by region <a name="SolutionDBivideInfraByRegion"></a>
+![](img_readme/device_infra_for_region.png)
+A survey on the characteristics of data payment getway: The data that needs to be broken down will be blocked with transId and partnerId. The data about config, setup partner is not much and does not have a large change frequency, the need to split by region is not high. </br>
+
+I let each partner choose 1 of 3 regions (US, EU, ASIA). All order information, logs, balance, ... related to that partner order will be saved in the data center with the corresponding region. </br>
+
+There will be some partners with a global customer base. They can have the option of multil partner, each order will be saved according to the region they want. If they are really big, they will have 3 independent information storage regions, all their reports and statistics will be independent according to those 3 regions. </br>
+
+For high speed querying and easy routing, each order identifier must clearly state which region it is in. The rules for this are clearly shown in the figure above. </br>
+
+## Solution cache divide infra by region <a name="SolutionCacheivideInfraByRegion"></a>
+The cache is also divided into independent regions just like the DB. All order cache information in the US region will be stored in the US cache. </br>
+
+## Service cache is independence between services and region <a name="ServiceCacheIsIndependenceBetweenServicesAndRegion"></a>
+
+For cache, there will be less problems than DB. This division by region also ensures that when one cluster fails, the other clusters still operate normally, improving the system's fault tolerance. </br>
+
+Service cache is independence between services and region
+
+## System load smart traffic balancer <a name="SystemSmartTrafficLoadbalancer"></a>
+I build a smart traffic system, it takes the user to the nearest server and is running stably to handle the request. The nodes or node clusters that have problems will be isolated from the system and handled </br>
+
+The foundation of this system: </br>
+Software define network + L4LB + L7LB + application backend </br>
+
+## System rate limit <a name="SystemRateLimit"></a>
+Rate limit is a job with very simple logic but to have a good rate limit is not simple. A good rate limit is that the system, in addition to running the right features, also has an extremely high load capacity, most importantly when the request exceeds the system's processing threshold, absolutely no requests are allowed to enter the server. It will be sent into a black hole and destroyed in vain. Building such a system takes a lot of resources. A famous system can be said as the rate limit system of Cloudflare, AWS. I consider using these 3rd parties for rate limit. </br>
+
