@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -49,6 +50,7 @@ func FakeOneBalancer() Balancer {
 var balancer = []Balancer{}
 
 func main() {
+
 	var wg sync.WaitGroup
 	username := "admin"
 	password := "1adphamnghia"
@@ -63,16 +65,22 @@ func main() {
 		panic("connect error")
 	}
 
-	starTime := time.TimeS
+	//rs1 := conn.Raw("SET global max_connections = ?", 100000)
+	//if rs1.Error != nil {
+	//	panic("set max_connections error" + rs1.Error.Error())
+	//}
+	var ops uint64
+
+	starTime := time.Now().Unix()
 	fmt.Println(starTime)
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 500; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fmt.Println("start one routine insert")
-			for i := 0; i < 500; i++ {
-				balancerTest := FakeOneBalancer()
-				err1 := conn.Create(balancerTest)
+			fmt.Println("start one routine insert, i = ", i)
+			for i := 0; i < 100; i++ {
+				atomic.AddUint64(&ops, 1)
+				err1 := conn.Model(&Balancer{}).Where("id = ?", 1).Update("create_at", ops)
 				if err1.Error != nil {
 					panic("insert error" + err1.Error.Error())
 				}
@@ -81,8 +89,17 @@ func main() {
 	}
 
 	wg.Wait()
-	endTime := time.Now().Second()
+	endTime := time.Now().Unix()
 
-	fmt.Println("time excute", endTime-starTime, "endtime", endTime, "startTime", starTime)
+	fmt.Println("rangetime", endTime-starTime, "endtime", endTime, "startTime", starTime)
 
 }
+
+/**
+Sumary:
+
+update 50000 row with 1 row:  78 endtime 1658583074 startTime 1658582996
+update 150 000 times with 3 row : range time 155 endtime 1658577594 startTime 1658577439
+
+The average of mysql is about 600 to 900 qps.
+*/
