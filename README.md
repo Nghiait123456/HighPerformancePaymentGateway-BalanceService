@@ -159,7 +159,7 @@ Here, each balance check or update order is inserted in a row to write the balan
 4) Once we have the latest information, we begin to calculate and process it as normal. </br>
 5) I left open the solution to move data from remote cache to cache local in memory for computation. Maybe in the future, I will use it to further optimize the calculation speed. </br>
 6) Every time a partner has place holder amount = total amount in DB, I will block that partner. A block variable will be set and released only when there is a change in the partner balance.
-7) When there is an order from the message queue with success, the total amount will be reduced, updating the warehouse status to success. When the total amount is reduced, there will be an event that fires with the reduced amount for order xyz status. At this time, the service handle transaction logs balance receiving this event will move the status order through MoveCassandra. All orders here will be shipped via Cassandra. </br>
+7) When there is an order from the message queue with success, the total amount will be reduced, updating the warehouse status to success. Always update the amount status first to ensure customers won't be able to buy more if updating the balance logs error. When the total amount is reduced, there will be an event that fires with the reduced amount for order xyz status. At this time, the service handle transaction logs balance receiving this event will move the status order through MoveCassandra. All orders here will be shipped via Cassandra. </br>
 ## Solution roolback after crash <a name="SolutionRoolbackAfterCrash"></a>
 
 Of course, I have to keep this to a minimum. But, unfortunately it happens, we need a way to deal with it. </br>
