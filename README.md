@@ -19,6 +19,9 @@ service balance for all partner, provider, end user, ...
     - [Problem save data](#ProblemSaveData)
     - [Solution save data](#SolutionSaveData)
     - [Detail solution save data](#DetailSolutionSaveData)
+    - [Solution high speed update balance](#SolutionHighSpeedUpdateBalance)
+    - [Detail process handle](#DetailProcessHandle)
+    - [Solution roolback after crash](#SolutionRoolbackAfterCrash)
 
   - [Get Data Trans](#GetDataTrans)
     - [Problem get data trans](#ProblemGetDataTrans)
@@ -80,6 +83,12 @@ When I want the system to handle several billion transactions per day, bottlenec
 
 Specifically: Those are IO operations: check balance, create transaction, update total amount. </br>
 
+I done one research mysql benmark: </br>
+Detail, with a single row insert command, mysql can insert about 3300 to 3600 rows/second. </br>
+With the update to one row command, mysql can execute about 600 to 900 qps commands. </br>
+With the update and lock for update to one row command, mysql can execute about 250 to 350 qps commands. </br>
+
+This number is extremely small with billions of users. We need a solution that can scale horizon or faster than this tens, hundreds of times. </br>
 ## Solution <a name="Solution"></a>
 ![](img_readme/sharding_balance_db.png)
 
@@ -100,6 +109,8 @@ I chose solution 2. The reasons I chose it:
 Characteristics of the number of partners < 10000 (this is a very large number, I need 2 parts). </br>
 1) Part one is the part of managing partner sharding, it will regulate and manage which partners + region exist on which sharding </br>
 2) Part two is the sharding data part, it will shard and contain balance partner information. Struct DB sharding requires enough basic fields, extension does not edit fields and adds data and extended json objects. This is an important thing with manual sharding systems. </br>
+3) Bottleneck about updating balance partner, I absolutely do not update to DB and do not use DB lock. The DB can only handle a small number of requests. I describe this issue in detail below. </br>
+
 
 ## Why i don't use auto sharding <a name="WhyIDontUseAutoSharding"></a>
 
@@ -126,6 +137,34 @@ The key here is that I need mysql to be lightweight to ensure system performance
 ## Detail solution save data <a name="DetailSolutionSaveData"></a>
 ![](img_readme/move_db_from_mysql_to_cassandra.png)
 
+## Solution high speed update balance <a name="SolutionHighSpeedUpdateBalance"></a>
+1) possible amount = amount - placeholder amount </br>
+   We will only work on the amount placeholder and update the amount only when necessary. </br>
+
+2) Each balance check command will be executed entirely on the cache and ram. I calculate by updating the placeholder count, to the threshold from 0 to the amount. The entire amount of data will be cached and calculated. I use redis lock to lock if two commands interact with a partner balance. </br>
+
+3) Cache is an ACID store not guaranteed, I need a solution for this. The system needs to be designed to ensure fast, rigorous ACID, so that it can handle recovery after cache or service failure. The system must absolutely guarantee that no transactions are miscalculated. There are two solutions to consider: use a message queue to store logs or use a DB to store logs. <br>
+
+Here, each balance check or update order is inserted in a row to write the balance. This panel will be shard to ensure the horizon scale. Again, I use mysql's strong point of ACID and stability, durability, and fault tolerance. With an extremely high load and error data recovery system, I chose mysql sharding. </br>
+
+
+4) The Redis key in step 2 is a very high performance key, several hundred thousand qps, but it is not 100% atomic. When the server cache crashes, the key can be lost, but this is not so important. I will always make sure the insert succeeds in step 3 to give the user feedback. If the insert in step 3 fails, we restore the placeholder count and issue a warning. </br>
+
+5) Overall in this solution I use compute in ram, cache to increase performance and add log inserts in mysql for integrity. The combination of ram + redis + mysql sharding is the key to this solution. </br>
+
+## Detail process handle <a name="DetailProcessHandle"></a>
+1) Reset all variables of remote cache, load partner balance information from DB to remote cache </br>
+2) Load transaction not success information from logs to get the amount place holder. (All transactions stored in balance logs are processed trans) and stored in remote cache </br>
+3) Server handle requests will be pending until all data loads are done in cache. </br>
+4) Once we have the latest information, we begin to calculate and process it as normal. </br>
+5) I left open the solution to move data from remote cache to cache local in memory for computation. Maybe in the future, I will use it to further optimize the calculation speed. </br>
+6) Every time a partner has place holder amount = total amount in DB, I will block that partner. A block variable will be set and released only when there is a change in the partner balance.
+7) When there is an order from the message queue with success, the total amount will be reduced, updating the warehouse status to success. When the total amount is reduced, there will be an event that fires with the reduced amount for order xyz status. At this time, the service handle transaction logs balance receiving this event will move the status order through MoveCassandra. All orders here will be shipped via Cassandra. </br>
+## Solution roolback after crash <a name="SolutionRoolbackAfterCrash"></a>
+
+Of course, I have to keep this to a minimum. But, unfortunately it happens, we need a way to deal with it. </br>
+
+Every time there is a crash, our job is to reload the system solutions. We have to make sure our running process is the same as the one running at crash. In other words, we don't need other proccess to when crashes, but the system is just like reloading data after restarting. <specific process> </br>
 
 ## System design system get data for several billion user <a name="SystemDesignSystemGetDataForSeveralBillionUser"></a>
 A system that pays api get data for billions of users is a difficult system, has many problems and needs to be calculated from an overview to meticulously each problem for the system to work stably. I will dissect each problem encountered and the solution in the following section. </br>
