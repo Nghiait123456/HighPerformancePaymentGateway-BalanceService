@@ -49,6 +49,10 @@ service balance for all partner, provider, end user, ...
 - [System load smart traffic balancer](#SystemSmartTrafficLoadbalancer)
 - [System rate limit](#SystemRateLimit)
 
+- [Background job check balance session timeout](#BackgroundJobCheckBalanceSessionTimeout)
+  - [The principle of job separation so that no lock is required?](#ThePrincipleOfJobSeparationSoThatNoLockIsRequired?)
+  - [Action isolation principle?](#ActionIsolationPrinciple)
+
 
 ## Review characteristics balance service in payment gateway <a name="ReviewCharacteristicsBalanceServiceInPaymentGateway"></a>
 The balance service at payment gateways and e-wallets in general has several characteristics: </br>
@@ -209,3 +213,15 @@ Software define network + L4LB + L7LB + application backend </br>
 ## System rate limit <a name="SystemRateLimit"></a>
 Rate limit is a job with very simple logic but to have a good rate limit is not simple. A good rate limit is that the system, in addition to running the right features, also has an extremely high load capacity, most importantly when the request exceeds the system's processing threshold, absolutely no requests are allowed to enter the server. It will be sent into a black hole and destroyed in vain. Building such a system takes a lot of resources. A famous system can be said as the rate limit system of Cloudflare, AWS. I consider using these 3rd parties for rate limit. </br>
 
+
+
+## Background job check balance session timeout <a name="BackgroundJobCheckBalanceSessionTimeout"></a>
+![](img_readme/backgroud_job_check_timeout.png)
+When the system is stable, you will rarely see this job running. This job is generated in case of abnormality leading to transaction timeout. If this job is too much, the processing system is having problems, please check and investigate it. </br>
+## The principle of job separation so that no lock is required? <a name="ThePrincipleOfJobSeparationSoThatNoLockIsRequired"></a>
+Avoid using lock as much as possible, a job will work with a shark, it gets all trans timeout in one day. Because the number of design jobs is not much, there is no need for too many workers to run. </br>
+
+## Action isolation principle? <a name="ActionIsolationPrinciple"></a>
+The job will not perform updates to the DB, it does one thing is to detect the transaction time. Everything ends. It then fires even to the message queue about transaction timeout detection, service update trans and service move trans via cassandra will do that. </br>
+
+If jobs do this, imagine there are 10 or 30 jobs, they are all edited directly into the DB. Oh, a pot of overlapping logic that you work so hard to debug. Let it be as independent as possible. </br>
