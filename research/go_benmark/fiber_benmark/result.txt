@@ -1,0 +1,262 @@
+one instance benmark:
+
+root@ip-172-31-30-238:/home/ubuntu/backendForLoadtest#  docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 11000 -d 20s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 20s using 11000 connection(s)
+[======================================================================================================================================================================================================] 20s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     50935.26   17477.58   94001.47
+  Latency      219.31ms   107.69ms      1.79s
+  Latency Distribution
+     50%   231.75ms
+     75%   277.04ms
+     90%   389.81ms
+     95%   469.27ms
+     99%   746.07ms
+  HTTP codes:
+    1xx - 0, 2xx - 1002160, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 1130
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 978
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 152
+  Throughput:    12.44MB/s
+root@ip-172-31-30-238:/home/ubuntu/backendForLoadtest#  docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 13000 -d 50s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 50s using 13000 connection(s)
+[======================================================================================================================================================================================================] 50s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     65681.95   23127.48   95791.09
+  Latency      199.31ms    81.61ms      1.76s
+  Latency Distribution
+     50%   147.77ms
+     75%   292.28ms
+     90%   381.70ms
+     95%   512.58ms
+     99%   666.54ms
+  HTTP codes:
+    1xx - 0, 2xx - 3264124, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 900
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 900
+  Throughput:    16.28MB/s
+root@ip-172-31-30-238:/home/ubuntu/backendForLoadtest# docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 17000 -d 50s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 50s using 17000 connection(s)
+[======================================================================================================================================================================================================] 50s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     83301.39   37701.36  124653.53
+  Latency      206.76ms   161.40ms      4.29s
+  Latency Distribution
+     50%   176.59ms
+     75%   288.11ms
+     90%   448.08ms
+     95%   621.49ms
+     99%      0.98s
+  HTTP codes:
+    1xx - 0, 2xx - 4090515, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 18477
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 9610
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 8601
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address - 266
+  Throughput:    20.43MB/s
+
+
+
+
+
+four intance benmark:
+test 1
+////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//
+
+1)
+docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 17000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 17000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     52263.56   15792.11  123321.11
+  Latency      326.43ms    97.81ms      2.12s
+  Latency Distribution
+     50%   325.06ms
+     75%   426.41ms
+     90%   539.39ms
+     95%   637.38ms
+     99%   847.95ms
+  HTTP codes:
+    1xx - 0, 2xx - 5206365, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 3115
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 1786
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 1329
+  Throughput:    13.02MB/s
+
+
+3) docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 17000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 17000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     46525.62   13469.53  110216.94
+  Latency      366.08ms   100.40ms      2.46s
+  Latency Distribution
+     50%   436.58ms
+     75%   457.26ms
+     90%   578.38ms
+     95%   674.17ms
+     99%      0.89s
+  HTTP codes:
+    1xx - 0, 2xx - 4637013, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 5742
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 4196
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 1546
+  Throughput:    11.59MB/s
+
+ docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 17000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 17000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     73572.49   30648.93  108455.78
+  Latency      234.64ms   181.97ms      5.84s
+  Latency Distribution
+     50%   184.42ms
+     75%   365.55ms
+     90%   474.05ms
+     95%   646.96ms
+     99%      0.86s
+  HTTP codes:
+    1xx - 0, 2xx - 7214533, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 32577
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 14889
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 14266
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address - 3040
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address (Client.Timeout exceeded while awaiting headers) - 382
+  Throughput:    18.05MB/s
+
+4) docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 17000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 17000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec      7040.57   14714.11  160140.88
+  Latency         3.66s      3.27s     27.31s
+  Latency Distribution
+     50%      3.08s
+     75%      5.15s
+     90%      7.27s
+     95%      9.94s
+     99%     16.12s
+  HTTP codes:
+    1xx - 0, 2xx - 129877, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 338212
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 199175
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address (Client.Timeout exceeded while awaiting headers) - 63478
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 50407
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address - 25152
+  Throughput:   353.65KB/s
+
+
+
+
+////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/////
+test2
+
+server 1:
+ docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 16000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 16000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     55784.38   27245.28  364033.49
+  Latency      310.82ms   565.22ms     19.93s
+  Latency Distribution
+     50%   187.74ms
+     75%   371.34ms
+     90%   480.42ms
+     95%   649.45ms
+     99%      2.99s
+  HTTP codes:
+    1xx - 0, 2xx - 5060795, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 78934
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 33031
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address (Client.Timeout exceeded while awaiting headers) - 22183
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 13109
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: dial tcp 172.31.28.155:80: connect: cannot assign requested address - 10611
+  Throughput:    12.66MB/s
+
+
+server 2:
+docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 16000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 16000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     58503.53   19197.18  113438.07
+  Latency      274.36ms    85.03ms      2.04s
+  Latency Distribution
+     50%   196.95ms
+     75%   382.71ms
+     90%   492.03ms
+     95%   578.79ms
+     99%   807.33ms
+  HTTP codes:
+    1xx - 0, 2xx - 5831346, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 2698
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 2225
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 473
+  Throughput:    14.58MB/s
+
+
+server3:
+
+ docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 16000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 16000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     52444.89   16330.22   78120.03
+  Latency      305.66ms    89.26ms      2.49s
+  Latency Distribution
+     50%   313.77ms
+     75%   401.62ms
+     90%   517.94ms
+     95%   600.76ms
+     99%   798.45ms
+  HTTP codes:
+    1xx - 0, 2xx - 5233459, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 3806
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 2787
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 1019
+  Throughput:    13.09MB/s
+
+
+server 4:
+
+ docker run -ti --rm --ulimit nofile=1000000:1000000 --network=host alpine/bombardier --http1 -c 16000 -d 100s -t 1s -l http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com/ping
+Bombarding http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping for 1m40s using 16000 connection(s)
+[====================================================================================================================================] 1m40s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     46203.23   13766.13  159617.09
+  Latency      347.27ms    97.75ms      2.26s
+  Latency Distribution
+     50%   415.03ms
+     75%   434.42ms
+     90%   556.17ms
+     95%   640.45ms
+     99%   840.56ms
+  HTTP codes:
+    1xx - 0, 2xx - 4605132, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 3669
+  Errors:
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled (Client.Timeout exceeded while awaiting headers) - 2586
+    Get http://ec2-18-141-202-112.ap-southeast-1.compute.amazonaws.com:80/ping: net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers) - 1083
+  Throughput:    11.51MB/s
+
