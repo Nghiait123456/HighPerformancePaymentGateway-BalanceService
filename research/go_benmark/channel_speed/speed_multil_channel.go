@@ -62,7 +62,9 @@ func main() {
 
 	r.GET("/getUp", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"up": up,
+			"up":                     up,
+			"time":                   time.Now().UnixNano() - startTime,
+			"average message/second": up*10 ^ 9/(uint64(time.Now().UnixNano()-startTime)),
 		})
 	})
 
@@ -70,21 +72,24 @@ func main() {
 }
 
 func loadBalancerJobWorker(inputJob chan balancer, channelsWorker map[int]chan balancerWorker) {
-	go func() {
-		for {
-			select {
-			// move job to worker handle it
-			case workInfo := <-inputJob:
-				if channelOneWorker, ok := channelsWorker[workInfo.partnerCode]; ok {
-					oneJobInfo := balancerWorker{amount: workInfo.amount, partnerCode: workInfo.partnerCode}
-					channelOneWorker <- oneJobInfo
-				} else {
-					err := fmt.Sprintf("job over range in worker %i", workInfo.partnerCode)
-					panic(err)
+	for i := 0; i < 150000; i++ {
+		go func() {
+			for {
+				select {
+				// move job to worker handle it
+				case workInfo := <-inputJob:
+					if channelOneWorker, ok := channelsWorker[workInfo.partnerCode]; ok {
+						oneJobInfo := balancerWorker{amount: workInfo.amount, partnerCode: workInfo.partnerCode}
+						channelOneWorker <- oneJobInfo
+					} else {
+						err := fmt.Sprintf("job over range in worker %i", workInfo.partnerCode)
+						panic(err)
+					}
 				}
 			}
-		}
-	}()
+		}()
+	}
+
 }
 
 func createMultiWorker() (map[int]chan balancerWorker, error) {
@@ -115,7 +120,7 @@ func createOneWorkerAndChannel(b chan balancerWorker, partnerCode int) {
 }
 
 func Push(c chan balancer) {
-	for i := 0; i < 50000; i++ {
+	for i := 0; i < 150000; i++ {
 		go func() {
 			for i := 0; i < maxWorker; i++ {
 				b := balancer{amount: 1, partnerCode: i}

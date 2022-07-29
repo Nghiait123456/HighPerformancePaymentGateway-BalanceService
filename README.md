@@ -27,6 +27,16 @@ service balance for all partner, provider, end user, ...
     - [Problem get data trans](#ProblemGetDataTrans)
     - [Solution get data trans](#SolutionGetDataTrans)
 
+- [Select tool for backend](#SelectToolForBackend)
+  - [Layout system server](#LayoutSystemServer)
+  - [Race conditions and weakness if use multil server and lock mutex](#RaceConditionsAndWeaknessIfUseMultilServerAndLockMutex)
+  - [Why use one instance server](#WhyUseOneInstanceServer)
+  - [Why i use golang?](#WhyIUseGolang)
+  - [Why don't use ring-buffer?](#WhyDontUseRingBuffer)
+  - [Why use channel?](#WhyUseChannel)
+  - [Why is fast http very quickly?](#WhyIsFastHttpVeryQuickly)
+  - [Why do i use fiber?](#WhyDoIUseFiber)
+
 
 - [System design system get data for several billion user](#SystemDesignSystemGetDataForSeveralBillionUser)
   - [Problem system high get data](#ProblemSystemHighGetData)
@@ -165,6 +175,44 @@ Here, each balance check or update order is inserted in a row to write the balan
 Of course, I have to keep this to a minimum. But, unfortunately it happens, we need a way to deal with it. </br>
 
 Every time there is a crash, our job is to reload the system solutions. We have to make sure our running process is the same as the one running at crash. In other words, we don't need other proccess to when crashes, but the system is just like reloading data after restarting. <specific process> </br>
+
+- [Select tool for backend](#SelectToolForBackend)
+  - [Layout system server](#LayoutSystemServer)
+  - [Race conditions and weakness if use multil server and lock mutex](#RaceConditionsAndWeaknessIfUseMultilServerAndLockMutex)
+  - [Why use one instance server](#WhyUseOneInstanceServer)
+  - [Why i use golang?](#WhyIUseGolang)
+  - [Why don't use ring-buffer?](#WhyDontUseRingBuffer)
+  - [Why use channel?](#WhyUseChannel)
+  - [Why is fast http very quickly?](#WhyIsFastHttpVeryQuickly)
+  - [Why do i use fiber?](#WhyDoIUseFiber)
+  - [Why don't i use workerpool?](#WhyDontIUseWorkerpool)
+
+
+
+## Select tool for backend <a name="SelectToolForBackend"></a>
+## Layout system server <a name="LayoutSystemServer"></a>
+I will only use one server for this service, yes, only one server for this service.</br>
+This model I learned from LMAX modified, I will explain the reason for this later. </br>
+## Race conditions and weakness if use multil server and lock mutex <a name="RaceConditionsAndWeaknessIfUseMultilServerAndLockMutex"></a>
+![](img_readme/race_condition_update_cache.png)
+It's a rule in computer science that: If there are race conditons, you use the lock control on that. When the limit exceeds the lock limit, no matter how many processes you increase, the performance only down because the server costs more switch context. </br>
+
+When the limit threshold has not been set, increasing the process will only take effect when the processing time when the process has a mutex lock is very small compared to the total process time and compared to the switch context time. If it is the opposite, the processing time when getting the lock is very large compared to the total process time and the switch context time, you will have thousands of processes waiting for each other and the switch context back and forth. In that context, it will often be slower than a process that runs sequentially without a lock. </br>
+## Why use one instance server <a name="WhyUseOneInstanceServer"></a>
+The reason I want to minimize race conditions and lock. I will use a single server, with network and cpu strong enough to handle about 200K rqs. I split jobs up to minimize race conditons. There will be only 1 worker running a group of jobs, and there will be many such models in a server. </br>
+
+To achieve this, 2 things are needed: </br>
+1) Split jobs into reasonable workers. </br>
+2) Use models that support local in memory high performance, concurrency. </br>
+3) Each incoming request must be handled very quickly and responded quickly, which is a prerequisite. It will have to do the computation on ram, and it will just do that, not do a lot of heavy processing. </br>
+4) IO operations take a long time, usually brush necks need to be removed or there is a solution to speed them up. </br>
+
+## Why i use golang? <a name="WhyIUseGolang"></a>
+Golang is fast, lightweight, extremely stable at high loads (something language interpreters often lose), good for concurrency, good for custom deep into the OS, packet and golang is highly stable, with few updates every year. In short, golang is suitable for most microservices. </br>
+Golang puts dev at the heart. Normal provides only basic, necessary api. The feature options will be handled by the dev, it does go and project go is always compact. Golang goes against the trend of interpreted languages, and it has been very successful in that direction. </br>
+
+
+
 
 ## System design system get data for several billion user <a name="SystemDesignSystemGetDataForSeveralBillionUser"></a>
 A system that pays api get data for billions of users is a difficult system, has many problems and needs to be calculated from an overview to meticulously each problem for the system to work stably. I will dissect each problem encountered and the solution in the following section. </br>
