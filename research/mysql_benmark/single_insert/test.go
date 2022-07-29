@@ -49,7 +49,6 @@ func FakeOneBalancer() Balancer {
 var balancer = []Balancer{}
 
 func main() {
-
 	var wg sync.WaitGroup
 	username := "admin"
 	password := "1adphamnghia"
