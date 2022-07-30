@@ -37,10 +37,10 @@ type calculatorBalancerInterface interface {
 	decreaseAmount(amountRequest uint) error
 	decreaseAmountPlaceHolder(amountRequest uint) error
 	HandleOneRequestBalance(b balancerRequest) (bool, error)
-	updateRequestApproved(b balancerRequest) (bool, error)
+	updateRequestApprovedLocalInMemory(b balancerRequest)
 	saveLogsPlaceHolder(b balancerRequest) (bool, error)
-	updateTypeRequestRecharge(b balancerRequest) (bool, error)
-	SaveLogsAmountReCharge(b balancerRequest) (bool, error)
+	updateRequestApprovedDB(b balancerRequest) (bool, error)
+	saveLogsAmountReCharge(b balancerRequest) (bool, error)
 }
 
 func (pB *partnerBalance) isValidAmount() bool {
