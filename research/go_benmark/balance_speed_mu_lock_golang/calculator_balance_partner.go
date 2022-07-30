@@ -60,29 +60,23 @@ func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
 
 	default:
 		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		EmergencyStop().ThrowEmergencyStop()
 		panic(err)
 	}
 }
 
 func (pB *partnerBalance) increaseAmount(amountRequest uint) error {
-	pB.muLock.Lock()
 	pB.amountTotal += amountRequest
-	pB.muLock.Unlock()
-
 	return nil
 }
 
 func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint) error {
-	pB.muLock.Lock()
-	defer pB.muLock.Unlock()
 	pB.amountPlaceHolder += amountRequest
 
 	return nil
 }
 
 func (pB *partnerBalance) decreaseAmount(amountRequest uint) error {
-	pB.muLock.Lock()
-	defer pB.muLock.Unlock()
 	if pB.amountTotal < amountRequest {
 		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.amountTotal, pB.partnerCode)
 		return errors.New(err)
@@ -93,8 +87,6 @@ func (pB *partnerBalance) decreaseAmount(amountRequest uint) error {
 }
 
 func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint) error {
-	pB.muLock.Lock()
-	defer pB.muLock.Unlock()
 	if pB.amountPlaceHolder < amountRequest {
 		err := fmt.Sprintf("amountRequest %i greater than amountPlaceHolder %i in partnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
 		return errors.New(err)
@@ -117,17 +109,23 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 		pB.muLock.Unlock()
 		return false, errors.New(errA)
 	}
+
+	//update to local in memory
+	updatedInMemory, errUI := pB.updateRequestApprovedLocalInMemory(b)
+	if !updatedInMemory {
+		return false, errUI
+	}
+	//release lock for performance
 	pB.muLock.Unlock()
 
-	updated, errU := pB.updateRequestApproved(b)
-	if !updated {
-		return false, errU
+	updatedDB, errUDB := pB.updateRequestApprovedDB(b)
+	if !updatedDB {
+		return false, errUDB
 	}
 
-	return true, nil
 }
 
-func (pB *partnerBalance) updateTypeRequestPayment(b balancerRequest) (bool, error) {
+func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b balancerRequest) (bool, error) {
 	// update local in memory
 	err := pB.increaseAmountPlaceHolder(b.amountRequest)
 	if err != nil {
@@ -139,22 +137,30 @@ func (pB *partnerBalance) updateTypeRequestPayment(b balancerRequest) (bool, err
 		return false, err
 	}
 
+	return true, nil
+}
+
+func (pB *partnerBalance) updateTypeRequestPaymentDB(b balancerRequest) (bool, error) {
 	// save log place holder
 	saveLog, errSL := pB.saveLogsPlaceHolder(b)
 	if !saveLog {
 		//rollback  local in memory
+		pB.muLock.Lock()
 		err := pB.decreaseAmountPlaceHolder(b.amountRequest)
 		if err != nil {
+			pB.muLock.Unlock()
+			EmergencyStop().ThrowEmergencyStop()
 			panic("don't roollback amount place holder")
 		}
 
+		pB.muLock.Unlock()
 		return false, errSL
 	}
 
 	return true, nil
 }
 
-func (pB *partnerBalance) updateTypeRequestRecharge(b balancerRequest) (bool, error) {
+func (pB *partnerBalance) updateTypeRequestRechargeLocalInMemory(b balancerRequest) (bool, error) {
 	// update local in memory
 	err := pB.increaseAmount(b.amountRequest)
 	if err != nil {
@@ -167,27 +173,48 @@ func (pB *partnerBalance) updateTypeRequestRecharge(b balancerRequest) (bool, er
 		return false, err
 	}
 
+	return true, nil
+}
+
+func (pB *partnerBalance) updateTypeRequestRechargeDB(b balancerRequest) (bool, error) {
 	// save log place holder
 	saveLog, errSL := pB.saveLogsAmountReCharge(b)
 	if !saveLog {
 		//rollback  local in memory
+		pB.muLock.Lock()
 		err := pB.decreaseAmount(b.amountRequest)
 		if err != nil {
+			pB.muLock.Unlock()
+			EmergencyStop().ThrowEmergencyStop()
 			panic("don't roollback amount")
 		}
 
+		pB.muLock.Unlock()
 		return false, errSL
 	}
 
 	return true, nil
 }
 
-func (pB *partnerBalance) updateRequestApproved(b balancerRequest) (bool, error) {
+func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b balancerRequest) (bool, error) {
 	switch b.typeRequest {
 	case typeRequestPayment:
-		return pB.updateTypeRequestPayment(b)
+		return pB.updateTypeRequestPaymentLocalInMemory(b)
 	case typeRequestRecharge:
-		return pB.updateTypeRequestRecharge(b)
+		return pB.updateTypeRequestRechargeLocalInMemory(b)
+
+	default:
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		panic(err)
+	}
+}
+
+func (pB *partnerBalance) updateRequestApprovedDB(b balancerRequest) (bool, error) {
+	switch b.typeRequest {
+	case typeRequestPayment:
+		return pB.updateTypeRequestPaymentDB(b)
+	case typeRequestRecharge:
+		return pB.updateTypeRequestRechargeDB(b)
 
 	default:
 		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)

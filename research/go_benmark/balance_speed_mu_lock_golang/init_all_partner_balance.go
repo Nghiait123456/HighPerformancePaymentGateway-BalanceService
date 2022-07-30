@@ -10,6 +10,12 @@ import (
 all information partner for calculator balance
 */
 
+var EmergencyS = NewEmergencyStop()
+
+func EmergencyStop() emergencyStopInterface {
+	return EmergencyS
+}
+
 type allPartner struct {
 	allPartner map[string]partnerBalance
 	muLock     sync.Mutex
