@@ -19,7 +19,7 @@ var (
 	typeRequestRecharge = "recharge"
 )
 
-type partnerInfo struct {
+type partnerBalance struct {
 	partnerCode           string
 	partnerName           string
 	partnerIdentification uint
@@ -29,57 +29,179 @@ type partnerInfo struct {
 	muLock                sync.Mutex
 }
 
-type calculatorBalancer interface {
+type calculatorBalancerInterface interface {
 	isValidAmount() bool
-	isAccessOrder(amountRequest uint, typeRequest string) bool
+	isApproveOrder(b balancerRequest) (bool, string)
 	increaseAmount(amountRequest uint) error
 	increaseAmountPlaceHolder(amountRequest uint) error
 	decreaseAmount(amountRequest uint) error
 	decreaseAmountPlaceHolder(amountRequest uint) error
+	HandleOneRequestBalance(b balancerRequest) (bool, error)
+	updateRequestApproved(b balancerRequest) (bool, error)
+	saveLogsPlaceHolder(b balancerRequest) (bool, error)
+	updateTypeRequestRecharge(b balancerRequest) (bool, error)
+	SaveLogsAmountReCharge(b balancerRequest) (bool, error)
 }
 
-func (pI *partnerInfo) isValidAmount() bool {
-	return pI.amountTotal >= 0 && pI.amountPlaceHolder >= 0 && pI.amountTotal >= pI.amountPlaceHolder
+func (pB *partnerBalance) isValidAmount() bool {
+	return pB.amountTotal >= 0 && pB.amountPlaceHolder >= 0 && pB.amountTotal >= pB.amountPlaceHolder
 }
 
-func (pI *partnerInfo) isAccessOrder(amountRequest uint, typeRequest string) bool {
-	switch typeRequest {
-	case typeRequest:
-		if amountRequest+pI.amountPlaceHolder <= pI.amountTotal {
-			return true
+func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
+	switch b.typeRequest {
+	case typeRequestPayment:
+		if b.amountRequest+pB.amountPlaceHolder <= pB.amountTotal {
+			return true, ""
 		}
-		return false
+		return false, "not enough money"
 
 	case typeRequestRecharge:
-		return true
+		return true, ""
 
 	default:
-		err := fmt.Sprintf("typeRequest %s to balancer service not exits", typeRequest)
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
 		panic(err)
 	}
 }
 
-func (pI *partnerInfo) increaseAmount(amountRequest uint) error {
-	pI.amountTotal += amountRequest
+func (pB *partnerBalance) increaseAmount(amountRequest uint) error {
+	pB.muLock.Lock()
+	pB.amountTotal += amountRequest
+	pB.muLock.Unlock()
+
 	return nil
 }
 
-func (pI *partnerInfo) increaseAmountPlaceHolder(amountRequest uint) error {
-	pI.amountPlaceHolder += amountRequest
+func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint) error {
+	pB.muLock.Lock()
+	defer pB.muLock.Unlock()
+	pB.amountPlaceHolder += amountRequest
+
 	return nil
 }
 
-func (pI *partnerInfo) decreaseAmount(amountRequest uint) error {
-	if pI.amountTotal < amountRequest {
-		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pI.amountTotal, pI.partnerCode)
+func (pB *partnerBalance) decreaseAmount(amountRequest uint) error {
+	pB.muLock.Lock()
+	defer pB.muLock.Unlock()
+	if pB.amountTotal < amountRequest {
+		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.amountTotal, pB.partnerCode)
 		return errors.New(err)
 	}
 
-	pI.amountTotal -= amountRequest
+	pB.amountTotal -= amountRequest
 	return nil
 }
 
-func (pI *partnerInfo) decreaseAmountPlaceHolder(amountRequest uint) error {
-	pI.amountPlaceHolder -= amountRequest
+func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint) error {
+	pB.muLock.Lock()
+	defer pB.muLock.Unlock()
+	if pB.amountPlaceHolder < amountRequest {
+		err := fmt.Sprintf("amountRequest %i greater than amountPlaceHolder %i in partnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
+		return errors.New(err)
+	}
+
+	pB.amountPlaceHolder -= amountRequest
 	return nil
+}
+
+// HandleOneRequestBalance is endpoint call check all process
+func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, error) {
+	pB.muLock.Lock()
+	if !pB.isValidAmount() {
+		pB.muLock.Unlock()
+		return false, errors.New("amount partner not valid")
+	}
+
+	approved, errA := pB.isApproveOrder(b)
+	if !approved {
+		pB.muLock.Unlock()
+		return false, errors.New(errA)
+	}
+	pB.muLock.Unlock()
+
+	updated, errU := pB.updateRequestApproved(b)
+	if !updated {
+		return false, errU
+	}
+
+	return true, nil
+}
+
+func (pB *partnerBalance) updateTypeRequestPayment(b balancerRequest) (bool, error) {
+	// update local in memory
+	err := pB.increaseAmountPlaceHolder(b.amountRequest)
+	if err != nil {
+		//rollback local in memory
+		err := pB.decreaseAmountPlaceHolder(b.amountRequest)
+		if err != nil {
+			panic("don't roollback amount")
+		}
+		return false, err
+	}
+
+	// save log place holder
+	saveLog, errSL := pB.saveLogsPlaceHolder(b)
+	if !saveLog {
+		//rollback  local in memory
+		err := pB.decreaseAmountPlaceHolder(b.amountRequest)
+		if err != nil {
+			panic("don't roollback amount place holder")
+		}
+
+		return false, errSL
+	}
+
+	return true, nil
+}
+
+func (pB *partnerBalance) updateTypeRequestRecharge(b balancerRequest) (bool, error) {
+	// update local in memory
+	err := pB.increaseAmount(b.amountRequest)
+	if err != nil {
+		//rollback local in memory
+		err := pB.decreaseAmount(b.amountRequest)
+		if err != nil {
+			panic("don't roollback amount")
+		}
+
+		return false, err
+	}
+
+	// save log place holder
+	saveLog, errSL := pB.saveLogsAmountReCharge(b)
+	if !saveLog {
+		//rollback  local in memory
+		err := pB.decreaseAmount(b.amountRequest)
+		if err != nil {
+			panic("don't roollback amount")
+		}
+
+		return false, errSL
+	}
+
+	return true, nil
+}
+
+func (pB *partnerBalance) updateRequestApproved(b balancerRequest) (bool, error) {
+	switch b.typeRequest {
+	case typeRequestPayment:
+		return pB.updateTypeRequestPayment(b)
+	case typeRequestRecharge:
+		return pB.updateTypeRequestRecharge(b)
+
+	default:
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		panic(err)
+	}
+}
+
+func (pB *partnerBalance) saveLogsPlaceHolder(b balancerRequest) (bool, error) {
+	// todo save logs to DB logs requet balance, db is sharding
+	return true, nil
+}
+
+// SaveLogsAmountReCharge save in same DB with totalAmount Balance
+func (pB *partnerBalance) saveLogsAmountReCharge(b balancerRequest) (bool, error) {
+	// todo start transacions, update amount and update logs
+	return true, nil
 }

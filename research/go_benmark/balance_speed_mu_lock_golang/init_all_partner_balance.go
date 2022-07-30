@@ -11,7 +11,7 @@ all information partner for calculator balance
 */
 
 type allPartner struct {
-	allPartner map[string]partnerInfo
+	allPartner map[string]partnerBalance
 	muLock     sync.Mutex
 }
 
@@ -20,16 +20,16 @@ type allPartnerInterface interface {
 }
 
 type initPartnersInterface interface {
-	LoadAllPartnerInfo() (map[string]partnerInfo, error)
+	LoadAllPartnerInfo() (map[string]partnerBalance, error)
 	InitAllPartnerInfo() error
-	UpdateOnePartner(p partnerInfo) error
-	GetOnePartner(partnerCode string) (partnerInfo, error)
-	getKeyOnePartner(p partnerInfo) string
+	UpdateOnePartner(p partnerBalance) error
+	GetOnePartner(partnerCode string) (partnerBalance, error)
+	getKeyOnePartner(p partnerBalance) string
 }
 
-func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerInfo, error) {
-	fake := make(map[string]partnerInfo)
-	fake["partner_test"] = partnerInfo{
+func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) {
+	fake := make(map[string]partnerBalance)
+	fake["partner_test"] = partnerBalance{
 		partnerCode:           "partner_test",
 		partnerName:           "TEST",
 		partnerIdentification: 1,
@@ -72,22 +72,22 @@ func (allP *allPartner) InitAllPartnerInfo() error {
 	return nil
 }
 
-func (allP *allPartner) UpdateOnePartner(p partnerInfo) error {
+func (allP *allPartner) UpdateOnePartner(p partnerBalance) error {
 	p.muLock.Lock()
 	key := allP.getKeyOnePartner(p)
 	allP.allPartner[key] = p
 	return nil
 }
 
-func (allP *allPartner) getKeyOnePartner(p partnerInfo) string {
+func (allP *allPartner) getKeyOnePartner(p partnerBalance) string {
 	return p.partnerCode
 }
 
-func (allP *allPartner) GetOnePartner(partnerCode string) (partnerInfo, error) {
+func (allP *allPartner) GetOnePartner(partnerCode string) (partnerBalance, error) {
 	partner, ok := allP.allPartner[partnerCode]
 	if !ok {
 		err := fmt.Sprintf("partnercode %s not exists", partnerCode)
-		return partnerInfo{}, errors.New(err)
+		return partnerBalance{}, errors.New(err)
 	}
 
 	return partner, nil
