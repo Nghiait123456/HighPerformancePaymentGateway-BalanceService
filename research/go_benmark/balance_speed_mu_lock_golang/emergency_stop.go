@@ -15,7 +15,7 @@ type emergencyStop struct {
 type emergencyStopInterface interface {
 	init()
 	IsStop() bool
-	ThrowEmergencyStop() error
+	ThrowEmergencyStop()
 }
 
 func (e *emergencyStop) init() {
@@ -26,11 +26,10 @@ func (e *emergencyStop) IsStop() bool {
 	return atomic.CompareAndSwapUint32(&e.stop, valueStop, valueStop)
 }
 
-func (e *emergencyStop) ThrowEmergencyStop() error {
+func (e *emergencyStop) ThrowEmergencyStop() {
 	e.mu.Lock()
 	e.stop = valueStop
 	e.mu.Unlock()
-	return nil
 }
 
 func NewEmergencyStop() emergencyStopInterface {
