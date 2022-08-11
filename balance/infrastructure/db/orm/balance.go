@@ -1,7 +1,10 @@
 package orm
 
-import "gorm.io/gorm"
-
 type Balance struct {
-	gorm.Model
+	ID          uint32 `gorm:"primaryKey;<-:create"`
+	Balance     uint32
+	PartnerCode string
+	status      string
+	CreatedAt   uint32
+	UpdatedAt   uint32
 }
