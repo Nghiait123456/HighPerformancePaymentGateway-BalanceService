@@ -1,4 +1,4 @@
-package balance_shard_logs
+package shard_logs
 
 /**
   all info partner config sharding

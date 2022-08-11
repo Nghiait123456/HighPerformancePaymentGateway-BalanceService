@@ -5,6 +5,7 @@ type lbShard struct {
 }
 
 type lbShardInterface interface {
+	// loadBalanceShard select one shard in pool
 	loadBalanceShard() Shard
 }
 

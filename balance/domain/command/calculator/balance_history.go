@@ -1,4 +1,4 @@
-package main
+package calculator
 
 type balancePlaceHolderHistory struct {
 	allAmountPlaceHolder allAmountPlaceHolderFrLogs

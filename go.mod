@@ -1,7 +1,9 @@
 module high-performance-payment-gateway/balance-service
 
-go 1.17
+go 1.18
 
-require github.com/gammazero/workerpool v1.1.2
-
-require github.com/gammazero/deque v0.1.0 // indirect
+require (
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.4 // indirect
+	gorm.io/gorm v1.23.8 // indirect
+)

@@ -1,0 +1,1 @@
+Has state, status, logic, handle of domain
