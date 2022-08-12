@@ -1,6 +1,9 @@
 package shard_logs
 
-import "sync/atomic"
+import (
+	"math"
+	"sync/atomic"
+)
 
 type lbShard struct {
 	allPShard allPShard
@@ -9,6 +12,8 @@ type lbShard struct {
 type lbShardInterface interface {
 	// loadBalanceShard select one shard in pool
 	loadBalanceShard(partnerCode string) Shard
+	InitConnectAllShard() error
+	UpdateConnectAllShard() error
 }
 
 func (lb *lbShard) loadBalanceShard(partnerCode string) Shard {
@@ -22,8 +27,16 @@ func (lb *lbShard) loadBalanceShard(partnerCode string) Shard {
 		}
 	}
 
-	atomic.AddUint64(&partnerShard.indexShard, 1)
 	//Round Robin
+	atomic.AddUint64(&partnerShard.indexShard, 1)
+	if partnerShard.indexShard == math.MaxUint64 {
+		partnerShard.indexShard = 0
+	}
 	shardId := partnerShard.indexShard % uint64(partnerShard.totalShard)
+
 	return partnerShard.listShard[uint(shardId)]
+}
+
+func (lb *lbShard) InitAllShard() error {
+
 }

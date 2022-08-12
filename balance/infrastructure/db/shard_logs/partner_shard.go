@@ -1,10 +1,6 @@
 package shard_logs
 
-/**
-  all info partner config sharding
-*/
-type allPartnerShard struct {
-}
+import "gorm.io/gorm"
 
 //onePartnerShard partner mapping shard
 type onePartnerShard struct {
@@ -20,10 +16,13 @@ type trafficShard struct {
 	totalVisit uint32
 }
 
-// Shard : infor one shard
+// Shard : info one shard
 type Shard struct {
 	shardId   uint
 	shardCode string
+	dsnEncry  string
+	dnsRaw    string
+	db        *gorm.DB
 }
 
 type allPShard map[string]onePartnerShard

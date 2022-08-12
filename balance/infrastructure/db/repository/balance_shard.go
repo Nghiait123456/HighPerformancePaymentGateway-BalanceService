@@ -6,11 +6,12 @@ import (
 )
 
 type BalanceShard struct {
-	DB         *gorm.DB
-	BalanceOrm orm.BalanceShard
+	DB              *gorm.DB
+	BalanceShardOrm orm.BalanceShard
 }
 
 type BalanceShardInterface interface {
+	GetAllBalanceShard() ([]BalanceShard, error)
 	GetById(id uint32) (orm.BalanceShard, error)
 	CreateNew(bll orm.BalanceShard) error
 	UpdateAllField(update orm.BalanceShard) error
@@ -52,6 +53,16 @@ func (b *BalanceShard) UpdateById(id uint32, update map[string]interface{}) erro
 	}
 
 	return nil
+}
+
+func (b *BalanceShard) GetAllBalanceShard() ([]BalanceShard, error) {
+	var bs []BalanceShard
+	rs := b.DB.Find(&bs)
+	if rs.Error != nil {
+		return bs, rs.Error
+	}
+
+	return bs, nil
 }
 
 func NewBalanceShardRepository() BalanceShardInterface {
