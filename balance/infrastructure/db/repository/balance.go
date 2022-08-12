@@ -9,10 +9,14 @@ import (
 type Balance struct {
 	DB         *gorm.DB
 	BalanceOrm orm.Balance
-	ctx        context.Context
+	BaseRepo   BaseInterface
 }
 
 type BalanceInterface interface {
+	SetTimeout(timeout uint32)
+	ResetTimeout()
+	SetContext(ctx context.Context)
+	ResetContext()
 	GetById(id uint32) (orm.Balance, error)
 	GetByPartnerCode(partnerCode string) (orm.Balance, error)
 	CreateNew(bl orm.Balance) error
@@ -21,9 +25,15 @@ type BalanceInterface interface {
 	UpdateById(id uint32, update map[string]interface{}) error
 }
 
-func (b *Balance) GetById(id uint32) (orm.Balance, error) {
+func (rp *Balance) GetById(id uint32) (orm.Balance, error) {
 	var balance orm.Balance
-	rs := b.DB.WithContext(b.ctx).Where("id = ?", id).First(&balance)
+
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Where("id = ?", id).First(&balance)
 	if rs.Error != nil {
 		return balance, rs.Error
 	}
@@ -31,9 +41,15 @@ func (b *Balance) GetById(id uint32) (orm.Balance, error) {
 	return balance, nil
 }
 
-func (b *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
+func (rp *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 	var balance orm.Balance
-	rs := b.DB.WithContext(b.ctx).Where("partner_code = ?", partnerCode).First(&balance)
+
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Where("partner_code = ?", partnerCode).First(&balance)
 	if rs.Error != nil {
 		return balance, rs.Error
 	}
@@ -41,8 +57,13 @@ func (b *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 	return balance, nil
 }
 
-func (b *Balance) CreateNew(bl orm.Balance) error {
-	rs := b.DB.WithContext(b.ctx).Create(&bl)
+func (rp *Balance) CreateNew(bl orm.Balance) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Create(&bl)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -50,8 +71,13 @@ func (b *Balance) CreateNew(bl orm.Balance) error {
 	return nil
 }
 
-func (b *Balance) UpdateAllField(update orm.Balance) error {
-	rs := b.DB.WithContext(b.ctx).Updates(&update)
+func (rp *Balance) UpdateAllField(update orm.Balance) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -59,8 +85,13 @@ func (b *Balance) UpdateAllField(update orm.Balance) error {
 	return nil
 }
 
-func (b *Balance) UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error {
-	rs := b.DB.WithContext(b.ctx).Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
+func (rp *Balance) UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -68,13 +99,38 @@ func (b *Balance) UpdateByPartnerCode(partnerCode string, update map[string]inte
 	return nil
 }
 
-func (b *Balance) UpdateById(id uint32, update map[string]interface{}) error {
-	rs := b.DB.WithContext(b.ctx).Model(&orm.Balance{}).Where("id = ?", id).Updates(update)
+func (rp *Balance) UpdateById(id uint32, update map[string]interface{}) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Model(&orm.Balance{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
 
 	return nil
+}
+
+//SetTimeout ms
+func (rp *Balance) SetTimeout(timeout uint32) {
+	rp.BaseRepo.SetTimeout(timeout)
+}
+
+//ResetTimeout
+func (rp *Balance) ResetTimeout() {
+	rp.BaseRepo.ResetTimeout()
+}
+
+//SetTimeout ms
+func (rp *Balance) SetContext(ctx context.Context) {
+	rp.BaseRepo.SetContext(ctx)
+}
+
+//ResetTimeout
+func (rp *Balance) ResetContext() {
+	rp.BaseRepo.ResetContext()
 }
 
 func NewBalanceRepository() BalanceInterface {

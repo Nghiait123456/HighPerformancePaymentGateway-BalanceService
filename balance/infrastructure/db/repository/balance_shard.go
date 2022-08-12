@@ -9,20 +9,30 @@ import (
 type BalanceShard struct {
 	DB              *gorm.DB
 	BalanceShardOrm orm.BalanceShard
-	ctx             context.Context
+	BaseRepo        BaseInterface
 }
 
 type BalanceShardInterface interface {
-	GetAllBalanceShard() ([]orm.BalanceShard, error)
+	SetTimeout(timeout uint32)
+	ResetTimeout()
+	SetContext(ctx context.Context)
+	ResetContext()
+	// AllBalanceShard return ["partner_code"]orm.BalanceShard
+	AllBalanceShard() (map[string]orm.BalanceShard, error)
 	GetById(id uint32) (orm.BalanceShard, error)
 	CreateNew(bll orm.BalanceShard) error
 	UpdateAllField(update orm.BalanceShard) error
 	UpdateById(id uint32, update map[string]interface{}) error
 }
 
-func (bs *BalanceShard) GetById(id uint32) (orm.BalanceShard, error) {
+func (rp *BalanceShard) GetById(id uint32) (orm.BalanceShard, error) {
 	var balanceShard orm.BalanceShard
-	rs := bs.DB.WithContext(bs.ctx).Where("id = ?", id).First(&balanceShard)
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Where("id = ?", id).First(&balanceShard)
 	if rs.Error != nil {
 		return balanceShard, rs.Error
 	}
@@ -30,8 +40,13 @@ func (bs *BalanceShard) GetById(id uint32) (orm.BalanceShard, error) {
 	return balanceShard, nil
 }
 
-func (bs *BalanceShard) CreateNew(bll orm.BalanceShard) error {
-	rs := bs.DB.WithContext(bs.ctx).Create(&bll)
+func (rp *BalanceShard) CreateNew(bll orm.BalanceShard) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Create(&bll)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -39,8 +54,13 @@ func (bs *BalanceShard) CreateNew(bll orm.BalanceShard) error {
 	return nil
 }
 
-func (bs *BalanceShard) UpdateAllField(update orm.BalanceShard) error {
-	rs := bs.DB.WithContext(bs.ctx).Updates(&update)
+func (rp *BalanceShard) UpdateAllField(update orm.BalanceShard) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -48,8 +68,13 @@ func (bs *BalanceShard) UpdateAllField(update orm.BalanceShard) error {
 	return nil
 }
 
-func (bs *BalanceShard) UpdateById(id uint32, update map[string]interface{}) error {
-	rs := bs.DB.WithContext(bs.ctx).Model(&orm.BalanceShard{}).Where("id = ?", id).Updates(update)
+func (rp *BalanceShard) UpdateById(id uint32, update map[string]interface{}) error {
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB.Model(&orm.BalanceShard{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -57,16 +82,46 @@ func (bs *BalanceShard) UpdateById(id uint32, update map[string]interface{}) err
 	return nil
 }
 
-func (bs *BalanceShard) GetAllBalanceShard() ([]orm.BalanceShard, error) {
+func (rp *BalanceShard) AllBalanceShard() (map[string]orm.BalanceShard, error) {
 	var bsd []orm.BalanceShard
-	rs := bs.DB.WithContext(bs.ctx).Find(&bsd)
-	if rs.Error != nil {
-		return bsd, rs.Error
+	var rt map[string]orm.BalanceShard
+
+	rp.BaseRepo.UpdateContext(rp.DB)
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	return bsd, nil
+	rs := rp.DB.Find(&bsd)
+	if rs.Error != nil {
+		return rt, rs.Error
+	}
+
+	for _, v := range bsd {
+		rt[v.ShardCode] = v
+	}
+
+	return rt, nil
 }
 
+//SetTimeout ms
+func (rp *BalanceShard) SetTimeout(timeout uint32) {
+	rp.BaseRepo.SetTimeout(timeout)
+}
+
+//ResetTimeout
+func (rp *BalanceShard) ResetTimeout() {
+	rp.BaseRepo.ResetTimeout()
+}
+
+//SetTimeout ms
+func (rp *BalanceShard) SetContext(ctx context.Context) {
+	rp.BaseRepo.SetContext(ctx)
+}
+
+//ResetTimeout
+func (rp *BalanceShard) ResetContext() {
+	rp.BaseRepo.ResetContext()
+}
 func NewBalanceShardRepository() BalanceShardInterface {
 	return &BalanceShard{}
 }
