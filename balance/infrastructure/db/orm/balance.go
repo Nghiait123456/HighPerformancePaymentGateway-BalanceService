@@ -1,7 +1,7 @@
 package orm
 
 type Balance struct {
-	ID          uint32 `gorm:"primaryKey;<-:create"`
+	ID          uint32 `gorm:"<-:create"`
 	Balance     uint32
 	PartnerCode string
 	Status      string
@@ -12,6 +12,11 @@ type Balance struct {
 const (
 	STATUS_ACTIVE = "active"
 )
+
+// TableName overrides
+func (b *Balance) TableName() string {
+	return "balances"
+}
 
 func (b *Balance) IsActive() bool {
 	return b.Status == STATUS_ACTIVE
