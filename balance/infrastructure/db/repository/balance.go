@@ -13,7 +13,7 @@ type Balance struct {
 type BalanceInterface interface {
 	GetById(id uint32) (orm.Balance, error)
 	GetByPartnerCode(partnerCode string) (orm.Balance, error)
-	CreateNew(b orm.Balance) error
+	CreateNew(bl orm.Balance) error
 	UpdateAllField(update orm.Balance) error
 	UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error
 	UpdateById(id uint32, update map[string]interface{}) error
