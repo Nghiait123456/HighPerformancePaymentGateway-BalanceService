@@ -1,11 +1,8 @@
 package shard_logs
 
 import (
-	"context"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
 	"math"
 	"sync/atomic"
-	"time"
 )
 
 type lbShard struct {
@@ -43,17 +40,18 @@ func (lb *lbShard) loadBalanceShard(partnerCode string) Shard {
 func (lb *lbShard) InitAllShard() error {
 	// get all ShardBalane
 
-	bsr := repository.NewBalanceShardRepository(ctx)
-
-	//get all Partner
-	ctxP, cancelP := context.WithTimeout(context.Background(), 600*time.Millisecond)
-	defer cancelP()
-	pbs := repository.NewPartnerBalanceShardRepository(ctxP)
-
-	allBsr, err := bsr.AllBalanceShard()
-	if err != nil {
-		return err
-	}
+	//bsr := repository.NewBalanceShardRepository(ctx)
+	//
+	////get all Partner
+	//ctxP, cancelP := context.WithTimeout(context.Background(), 600*time.Millisecond)
+	//defer cancelP()
+	//pbs := repository.NewPartnerBalanceShardRepository(ctxP)
+	//
+	//allBsr, err := bsr.AllBalanceShard()
+	//if err != nil {
+	//	return err
+	//}
 
 	//allShardBalance :=
+	return nil
 }
