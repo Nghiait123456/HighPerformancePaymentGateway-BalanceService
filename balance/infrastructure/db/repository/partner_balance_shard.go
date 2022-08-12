@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"gorm.io/gorm"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
@@ -8,6 +9,7 @@ import (
 type PartnerBalanceShard struct {
 	DB         *gorm.DB
 	BalanceOrm orm.PartnerBalanceShard
+	ctx        context.Context
 }
 
 type PartnerBalanceShardInterface interface {
@@ -17,9 +19,9 @@ type PartnerBalanceShardInterface interface {
 	UpdateById(id uint32, update map[string]interface{}) error
 }
 
-func (b *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, error) {
+func (pbs *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, error) {
 	var shard orm.PartnerBalanceShard
-	rs := b.DB.Where("id = ?", id).First(&shard)
+	rs := pbs.DB.WithContext(pbs.ctx).Where("id = ?", id).First(&shard)
 	if rs.Error != nil {
 		return shard, rs.Error
 	}
@@ -27,8 +29,8 @@ func (b *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, error
 	return shard, nil
 }
 
-func (b *PartnerBalanceShard) CreateNew(bll orm.PartnerBalanceShard) error {
-	rs := b.DB.Create(&bll)
+func (pbs *PartnerBalanceShard) CreateNew(bll orm.PartnerBalanceShard) error {
+	rs := pbs.DB.WithContext(pbs.ctx).Create(&bll)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -36,8 +38,8 @@ func (b *PartnerBalanceShard) CreateNew(bll orm.PartnerBalanceShard) error {
 	return nil
 }
 
-func (b *PartnerBalanceShard) UpdateAllField(update orm.PartnerBalanceShard) error {
-	rs := b.DB.Updates(&update)
+func (pbs *PartnerBalanceShard) UpdateAllField(update orm.PartnerBalanceShard) error {
+	rs := pbs.DB.WithContext(pbs.ctx).Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -45,8 +47,8 @@ func (b *PartnerBalanceShard) UpdateAllField(update orm.PartnerBalanceShard) err
 	return nil
 }
 
-func (b *PartnerBalanceShard) UpdateById(id uint32, update map[string]interface{}) error {
-	rs := b.DB.Model(&orm.PartnerBalanceShard{}).Where("id = ?", id).Updates(update)
+func (pbs *PartnerBalanceShard) UpdateById(id uint32, update map[string]interface{}) error {
+	rs := pbs.DB.WithContext(pbs.ctx).Model(&orm.PartnerBalanceShard{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}

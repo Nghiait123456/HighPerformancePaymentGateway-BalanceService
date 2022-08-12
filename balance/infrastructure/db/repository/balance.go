@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"gorm.io/gorm"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
@@ -8,6 +9,7 @@ import (
 type Balance struct {
 	DB         *gorm.DB
 	BalanceOrm orm.Balance
+	ctx        context.Context
 }
 
 type BalanceInterface interface {
@@ -21,7 +23,7 @@ type BalanceInterface interface {
 
 func (b *Balance) GetById(id uint32) (orm.Balance, error) {
 	var balance orm.Balance
-	rs := b.DB.Where("id = ?", id).First(&balance)
+	rs := b.DB.WithContext(b.ctx).Where("id = ?", id).First(&balance)
 	if rs.Error != nil {
 		return balance, rs.Error
 	}
@@ -31,7 +33,7 @@ func (b *Balance) GetById(id uint32) (orm.Balance, error) {
 
 func (b *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 	var balance orm.Balance
-	rs := b.DB.Where("partner_code = ?", partnerCode).First(&balance)
+	rs := b.DB.WithContext(b.ctx).Where("partner_code = ?", partnerCode).First(&balance)
 	if rs.Error != nil {
 		return balance, rs.Error
 	}
@@ -40,7 +42,7 @@ func (b *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 }
 
 func (b *Balance) CreateNew(bl orm.Balance) error {
-	rs := b.DB.Create(&bl)
+	rs := b.DB.WithContext(b.ctx).Create(&bl)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -49,7 +51,7 @@ func (b *Balance) CreateNew(bl orm.Balance) error {
 }
 
 func (b *Balance) UpdateAllField(update orm.Balance) error {
-	rs := b.DB.Updates(&update)
+	rs := b.DB.WithContext(b.ctx).Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -58,7 +60,7 @@ func (b *Balance) UpdateAllField(update orm.Balance) error {
 }
 
 func (b *Balance) UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error {
-	rs := b.DB.Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
+	rs := b.DB.WithContext(b.ctx).Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -67,7 +69,7 @@ func (b *Balance) UpdateByPartnerCode(partnerCode string, update map[string]inte
 }
 
 func (b *Balance) UpdateById(id uint32, update map[string]interface{}) error {
-	rs := b.DB.Model(&orm.Balance{}).Where("id = ?", id).Updates(update)
+	rs := b.DB.WithContext(b.ctx).Model(&orm.Balance{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
