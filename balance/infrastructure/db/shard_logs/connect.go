@@ -1,7 +1,7 @@
 package shard_logs
 
 import (
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/db/sql"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 )
 
 type Connect = sql.Connect

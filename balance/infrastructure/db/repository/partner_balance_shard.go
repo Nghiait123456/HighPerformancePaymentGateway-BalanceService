@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"high-performance-payment-gateway/balance-service/balance/entity"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/db/sql"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
