@@ -2,7 +2,6 @@ package shard_logs
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository_other_service"
 	"math"
@@ -10,20 +9,23 @@ import (
 	"sync/atomic"
 )
 
-type lbShard struct {
+/**
+lb for infra sharding table balance_log
+*/
+type lbShardLog struct {
 	allPShard  allPShard
 	allConnect map[string]Connect //[shardCode]Connect
 
 }
 
-type lbShardInterface interface {
+type lbShardLogInterface interface {
 	// loadBalanceShard select one shard in pool
-	loadBalanceShard(partnerCode string) *gorm.DB
-	InitConnectAllShard() error
+	loadBalanceShard(partnerCode string) Connect
+	InitAllShard() error
 	UpdateConnectAllShard() error
 }
 
-func (lb *lbShard) loadBalanceShard(partnerCode string) *gorm.DB {
+func (lb *lbShardLog) loadBalanceShard(partnerCode string) Connect {
 	partnerShard, ok := lb.allPShard[partnerCode]
 	if !ok {
 
@@ -50,7 +52,7 @@ func (lb *lbShard) loadBalanceShard(partnerCode string) *gorm.DB {
 	return partnerShard.listConnect[shardCode]
 }
 
-func (lb *lbShard) InitAllShard() error {
+func (lb *lbShardLog) InitAllShard() error {
 	banlancerShardRp := repository.NewBalanceShardRepository()
 	partnerBalanceShardRp := repository.NewPartnerBalanceShardRepository()
 	parnterRp := repository_other_service.NewPartnerRepository()
@@ -116,4 +118,12 @@ func (lb *lbShard) InitAllShard() error {
 	}
 
 	return nil
+}
+
+func (lb *lbShardLog) UpdateConnectAllShard() error {
+	return lb.InitAllShard()
+}
+
+func NewLBShardLog() lbShardLogInterface {
+	return &lbShardLog{}
 }
