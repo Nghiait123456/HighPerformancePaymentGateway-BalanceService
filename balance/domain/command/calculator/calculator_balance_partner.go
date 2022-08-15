@@ -23,13 +23,18 @@ type (
 		amountPlaceHolder     uint
 		status                string
 		muLock                sync.Mutex
+		EStop                 emergencyStopInterface
 	}
 
-	calculatorBalancerInterface interface {
+	partnerBalanceInterface interface {
+		calculatorPartnerBalancerInterface
+	}
+
+	calculatorPartnerBalancerInterface interface {
 		isValidAmount() bool
 		isApproveOrder(b balancerRequest) (bool, string)
-		increaseAmount(amountRequest uint) error
-		increaseAmountPlaceHolder(amountRequest uint) error
+		increaseAmount(amountRequest uint)
+		increaseAmountPlaceHolder(amountRequest uint)
 		decreaseAmount(amountRequest uint) error
 		decreaseAmountPlaceHolder(amountRequest uint) error
 		HandleOneRequestBalance(b balancerRequest) (bool, error)
@@ -62,7 +67,7 @@ func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
 
 	default:
 		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
-		EmergencyStop().ThrowEmergencyStop()
+		pB.EStop.ThrowEmergencyStop()
 		panic(err)
 	}
 }
@@ -98,7 +103,7 @@ func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint) error {
 // HandleOneRequestBalance is endpoint call check all process
 func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, error) {
 	pB.muLock.Lock()
-	if EmergencyStop().IsStop() {
+	if pB.EStop.IsStop() {
 		return true, nil
 	}
 
@@ -139,7 +144,7 @@ func (pB *partnerBalance) updateTypeRequestPaymentDB(b balancerRequest) (bool, e
 		//try again
 		saveLog2, errSL2 := pB.saveLogsPlaceHolder(b)
 		if !saveLog2 {
-			EmergencyStop().ThrowEmergencyStop()
+			pB.EStop.ThrowEmergencyStop()
 			err := fmt.Sprintf("updateTypeRequestPaymentDB error, err1: %s, err2 : %s ", errSL1.Error(), errSL2.Error())
 			panic(err)
 		}
@@ -160,7 +165,7 @@ func (pB *partnerBalance) updateTypeRequestRechargeDB(b balancerRequest) (bool, 
 		//try again
 		saveLog2, errSL2 := pB.saveLogsAmountReCharge(b)
 		if !saveLog2 {
-			EmergencyStop().ThrowEmergencyStop()
+			pB.EStop.ThrowEmergencyStop()
 			err := fmt.Sprintf("updateTypeRequestRechargeDB error, err1: %s, err2: %s", errSL1.Error(), errSL2.Error())
 			panic(err)
 		}
@@ -204,4 +209,8 @@ func (pB *partnerBalance) saveLogsPlaceHolder(b balancerRequest) (bool, error) {
 func (pB *partnerBalance) saveLogsAmountReCharge(b balancerRequest) (bool, error) {
 	// todo start transacions, update amount and update logs
 	return true, nil
+}
+
+func NewPartnerBalance() partnerBalanceInterface {
+	return &partnerBalance{}
 }
