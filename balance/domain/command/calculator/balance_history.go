@@ -18,7 +18,7 @@ type (
 		amountPlaceHolder uint
 	}
 
-	allAmountPlaceHolderFrLogs map[string]amountPlaceHolderFrLogs
+	allAmountPlaceHolderFrLogs map[string]amountPlaceHolderFrLogs // [partnerCode]amountPlaceHolderFrLogs
 )
 
 func (b *balancePlaceHolderHistory) allPartnerCode() []string {

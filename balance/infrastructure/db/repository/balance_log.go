@@ -2,13 +2,13 @@ package repository
 
 import (
 	"context"
-	"gorm.io/gorm"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/db/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
 type (
 	BalanceLog struct {
-		DB         *gorm.DB
+		DB         sql.Connect
 		BalanceOrm orm.Balance
 		BaseRepo   BaseInterface
 	}

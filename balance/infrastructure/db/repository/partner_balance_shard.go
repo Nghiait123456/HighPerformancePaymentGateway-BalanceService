@@ -2,14 +2,14 @@ package repository
 
 import (
 	"context"
-	"gorm.io/gorm"
 	"high-performance-payment-gateway/balance-service/balance/entity"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/db/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
 type (
 	PartnerBalanceShard struct {
-		DB                *gorm.DB
+		DB                sql.Connect
 		PartnerBalanceOrm orm.PartnerBalanceShard
 		BaseRepo          BaseInterface
 	}

@@ -1,5 +1,7 @@
 package shard_logs
 
-import "gorm.io/gorm"
+import (
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/db/sql"
+)
 
-type Connect *gorm.DB
+type Connect = sql.Connect
