@@ -8,12 +8,13 @@ import (
 
 type (
 	BalanceLog struct {
-		DB         sql.Connect
 		BalanceOrm orm.Balance
 		BaseRepo   BaseInterface
 	}
 
 	BalanceLogInterface interface {
+		SetConnect(cn sql.Connect)
+		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
@@ -29,12 +30,12 @@ type (
 func (rp *BalanceLog) GetById(id uint32) (orm.BalanceLog, error) {
 	var balanceLog orm.BalanceLog
 
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Where("id = ?", id).First(&balanceLog)
+	rs := rp.DB().Where("id = ?", id).First(&balanceLog)
 	if rs.Error != nil {
 		return balanceLog, rs.Error
 	}
@@ -42,13 +43,21 @@ func (rp *BalanceLog) GetById(id uint32) (orm.BalanceLog, error) {
 	return balanceLog, nil
 }
 
+func (rp *BalanceLog) SetConnect(cn sql.Connect) {
+	rp.BaseRepo.SetConnect(cn)
+}
+
+func (rp BalanceLog) DB() sql.Connect {
+	return rp.BaseRepo.CN()
+}
+
 func (rp *BalanceLog) CreateNew(bll orm.BalanceLog) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Create(&bll)
+	rs := rp.DB().Create(&bll)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -57,12 +66,12 @@ func (rp *BalanceLog) CreateNew(bll orm.BalanceLog) error {
 }
 
 func (rp *BalanceLog) UpdateAllField(update orm.BalanceLog) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Updates(&update)
+	rs := rp.DB().Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -71,12 +80,12 @@ func (rp *BalanceLog) UpdateAllField(update orm.BalanceLog) error {
 }
 
 func (rp *BalanceLog) UpdateById(id uint32, update map[string]interface{}) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Model(&orm.BalanceLog{}).Where("id = ?", id).Updates(update)
+	rs := rp.DB().Model(&orm.BalanceLog{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -85,12 +94,12 @@ func (rp *BalanceLog) UpdateById(id uint32, update map[string]interface{}) error
 }
 
 func (rp *BalanceLog) UpdateByOrderId(orderId uint64, update map[string]interface{}) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Model(&orm.BalanceLog{}).Where("order_id = ?", orderId).Updates(update)
+	rs := rp.DB().Model(&orm.BalanceLog{}).Where("order_id = ?", orderId).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}

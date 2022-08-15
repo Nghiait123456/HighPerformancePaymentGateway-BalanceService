@@ -9,12 +9,13 @@ import (
 
 type (
 	PartnerBalanceShard struct {
-		DB                sql.Connect
 		PartnerBalanceOrm orm.PartnerBalanceShard
 		BaseRepo          BaseInterface
 	}
 
 	PartnerBalanceShardInterface interface {
+		SetConnect(cn sql.Connect)
+		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
@@ -27,15 +28,23 @@ type (
 	}
 )
 
+func (rp *PartnerBalanceShard) SetConnect(cn sql.Connect) {
+	rp.BaseRepo.SetConnect(cn)
+}
+
+func (rp PartnerBalanceShard) DB() sql.Connect {
+	return rp.BaseRepo.CN()
+}
+
 func (rp *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, error) {
 	var shard orm.PartnerBalanceShard
 
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Where("id = ?", id).First(&shard)
+	rs := rp.DB().Where("id = ?", id).First(&shard)
 	if rs.Error != nil {
 		return shard, rs.Error
 	}
@@ -44,12 +53,12 @@ func (rp *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, erro
 }
 
 func (rp *PartnerBalanceShard) CreateNew(bll orm.PartnerBalanceShard) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Create(&bll)
+	rs := rp.DB().Create(&bll)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -58,12 +67,12 @@ func (rp *PartnerBalanceShard) CreateNew(bll orm.PartnerBalanceShard) error {
 }
 
 func (rp *PartnerBalanceShard) UpdateAllField(update orm.PartnerBalanceShard) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Updates(&update)
+	rs := rp.DB().Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -72,12 +81,12 @@ func (rp *PartnerBalanceShard) UpdateAllField(update orm.PartnerBalanceShard) er
 }
 
 func (rp *PartnerBalanceShard) UpdateById(id uint32, update map[string]interface{}) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Model(&orm.PartnerBalanceShard{}).Where("id = ?", id).Updates(update)
+	rs := rp.DB().Model(&orm.PartnerBalanceShard{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -86,13 +95,13 @@ func (rp *PartnerBalanceShard) UpdateById(id uint32, update map[string]interface
 }
 
 func (rp *PartnerBalanceShard) GetAllActiveByPartner(partnerCode string) (entity.PartnerBalanceShards, error) {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
 	var rs []orm.PartnerBalanceShard
-	r := rp.DB.Where("partner_code = ?", partnerCode).Where("status = ?", rp.PartnerBalanceOrm.StatusActive()).Find(&rs)
+	r := rp.DB().Where("partner_code = ?", partnerCode).Where("status = ?", rp.PartnerBalanceOrm.StatusActive()).Find(&rs)
 	if r.Error != nil {
 		return rs, r.Error
 	}

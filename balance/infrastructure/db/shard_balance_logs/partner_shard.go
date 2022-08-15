@@ -1,4 +1,4 @@
-package shard_logs
+package shard_balance_logs
 
 //onePartnerShard partner mapping shard
 type onePartnerShard struct {
@@ -25,7 +25,7 @@ type Shard struct {
 	db        Connect
 }
 
-type allPShard map[string]onePartnerShard
+type allPShard map[string]onePartnerShard //[partnerCode]onePartnerShard
 
 type partnerShardingInterface interface {
 	allConfigPartnerSharding() allPShard

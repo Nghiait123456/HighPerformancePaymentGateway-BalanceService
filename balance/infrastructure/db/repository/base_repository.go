@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
-	"gorm.io/gorm"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"time"
 )
 
 type (
 	Base struct {
+		DB           sql.Connect
 		ctx          context.Context
 		CancelFc     context.CancelFunc
 		isUseContext bool
@@ -16,17 +17,27 @@ type (
 	}
 
 	BaseInterface interface {
+		SetConnect(cn sql.Connect)
+		CN() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
 		ResetContext()
 		IsUseTimeout() bool
 		IsUseContext() bool
-		UpdateContext(db *gorm.DB)
+		UpdateContext()
 		IsHaveCancelFc() bool
 		GetCancelFc() context.CancelFunc
 	}
 )
+
+func (b *Base) SetConnect(cn sql.Connect) {
+	b.DB = cn
+}
+
+func (b Base) CN() sql.Connect {
+	return b.DB
+}
 
 //SetTimeout ms
 func (b *Base) SetTimeout(timeout uint32) {
@@ -59,16 +70,16 @@ func (b *Base) IsUseContext() bool {
 	return b.isUseContext == true
 }
 
-func (b *Base) UpdateContext(db *gorm.DB) {
+func (b *Base) UpdateContext() {
 	var ctx context.Context
 
 	// context is first, use context will disable use timeout
 	if b.isUseContext {
-		db = db.WithContext(b.ctx)
+		b.DB = b.DB.WithContext(b.ctx)
 	} else {
 		if b.isUseTimeout {
 			ctx, b.CancelFc = context.WithTimeout(context.Background(), time.Duration(b.timeOut)*time.Millisecond)
-			db = db.WithContext(ctx)
+			b.DB = b.DB.WithContext(ctx)
 		}
 	}
 }

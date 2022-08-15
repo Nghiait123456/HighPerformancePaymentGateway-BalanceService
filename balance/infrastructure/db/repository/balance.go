@@ -8,12 +8,13 @@ import (
 
 type (
 	Balance struct {
-		DB         sql.Connect
 		BalanceOrm orm.Balance
 		BaseRepo   BaseInterface
 	}
 
 	BalanceInterface interface {
+		SetConnect(cn sql.Connect)
+		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
@@ -27,15 +28,23 @@ type (
 	}
 )
 
+func (rp *Balance) SetConnect(cn sql.Connect) {
+	rp.BaseRepo.SetConnect(cn)
+}
+
+func (rp Balance) DB() sql.Connect {
+	return rp.BaseRepo.CN()
+}
+
 func (rp *Balance) GetById(id uint32) (orm.Balance, error) {
 	var balance orm.Balance
 
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Where("id = ?", id).First(&balance)
+	rs := rp.DB().Where("id = ?", id).First(&balance)
 	if rs.Error != nil {
 		return balance, rs.Error
 	}
@@ -46,12 +55,12 @@ func (rp *Balance) GetById(id uint32) (orm.Balance, error) {
 func (rp *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 	var balance orm.Balance
 
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Where("partner_code = ?", partnerCode).First(&balance)
+	rs := rp.DB().Where("partner_code = ?", partnerCode).First(&balance)
 	if rs.Error != nil {
 		return balance, rs.Error
 	}
@@ -60,12 +69,12 @@ func (rp *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 }
 
 func (rp *Balance) CreateNew(bl orm.Balance) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Create(&bl)
+	rs := rp.DB().Create(&bl)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -74,12 +83,12 @@ func (rp *Balance) CreateNew(bl orm.Balance) error {
 }
 
 func (rp *Balance) UpdateAllField(update orm.Balance) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Updates(&update)
+	rs := rp.DB().Updates(&update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -88,12 +97,12 @@ func (rp *Balance) UpdateAllField(update orm.Balance) error {
 }
 
 func (rp *Balance) UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
+	rs := rp.DB().Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -102,12 +111,12 @@ func (rp *Balance) UpdateByPartnerCode(partnerCode string, update map[string]int
 }
 
 func (rp *Balance) UpdateById(id uint32, update map[string]interface{}) error {
-	rp.BaseRepo.UpdateContext(rp.DB)
+	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Model(&orm.Balance{}).Where("id = ?", id).Updates(update)
+	rs := rp.DB().Model(&orm.Balance{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}

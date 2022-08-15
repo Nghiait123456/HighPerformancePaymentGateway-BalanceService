@@ -1,4 +1,4 @@
-package shard_logs
+package shard_balance_logs
 
 import (
 	"fmt"
@@ -115,6 +115,8 @@ func (lb *lbShardLog) InitAllShard() error {
 			oneP.listShard[v.ShardCode] = oneShard
 			oneP.trafficShard[v.ShardCode] = trafficShard{}
 		}
+
+		lb.allPShard[partnerCode] = oneP
 	}
 
 	return nil

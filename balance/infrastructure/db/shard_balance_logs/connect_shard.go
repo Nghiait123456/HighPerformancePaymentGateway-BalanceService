@@ -1,4 +1,4 @@
-package shard_logs
+package shard_balance_logs
 
 import (
 	"gorm.io/driver/mysql"
