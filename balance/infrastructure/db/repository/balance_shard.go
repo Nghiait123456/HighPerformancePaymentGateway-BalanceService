@@ -17,8 +17,8 @@ type BalanceShardInterface interface {
 	ResetTimeout()
 	SetContext(ctx context.Context)
 	ResetContext()
-	// AllBalanceShard return ["partner_code"]orm.BalanceShard
-	AllBalanceShard() (map[string]orm.BalanceShard, error)
+	//  AllBalanceShardActive return ["partner_code"]orm.BalanceShard
+	AllBalanceShardActive() (map[string]orm.BalanceShard, error)
 	GetById(id uint32) (orm.BalanceShard, error)
 	CreateNew(bll orm.BalanceShard) error
 	UpdateAllField(update orm.BalanceShard) error
@@ -82,7 +82,7 @@ func (rp *BalanceShard) UpdateById(id uint32, update map[string]interface{}) err
 	return nil
 }
 
-func (rp *BalanceShard) AllBalanceShard() (map[string]orm.BalanceShard, error) {
+func (rp *BalanceShard) AllBalanceShardActive() (map[string]orm.BalanceShard, error) {
 	var bsd []orm.BalanceShard
 	var rt map[string]orm.BalanceShard
 
@@ -91,7 +91,7 @@ func (rp *BalanceShard) AllBalanceShard() (map[string]orm.BalanceShard, error) {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB.Find(&bsd)
+	rs := rp.DB.Where("status = ?", rp.BalanceShardOrm.StatusActive()).Find(&bsd)
 	if rs.Error != nil {
 		return rt, rs.Error
 	}

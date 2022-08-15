@@ -1,28 +1,28 @@
 package shard_logs
 
-import "gorm.io/gorm"
-
 //onePartnerShard partner mapping shard
 type onePartnerShard struct {
-	partnerCode  string
-	status       string
-	totalShard   uint
-	indexShard   uint64
-	listShard    map[uint]Shard
-	trafficShard map[uint]trafficShard
+	partnerCode   string
+	status        string
+	totalShard    uint
+	indexShard    uint64
+	listCodeShard []string                // [1]ShardCode1, [2]ShardCode2
+	listShard     map[string]Shard        // [shardCode]Shard
+	listConnect   map[string]Connect      // [shardCode]*gorm.DB
+	trafficShard  map[string]trafficShard // [shardCode]trafficShard
 }
 
 type trafficShard struct {
-	totalVisit uint32
+	totalVisit uint64
 }
 
 // Shard : info one shard
 type Shard struct {
-	shardId   uint
+	shardId   uint32
 	shardCode string
 	dsnEncry  string
 	dnsRaw    string
-	db        *gorm.DB
+	db        Connect
 }
 
 type allPShard map[string]onePartnerShard

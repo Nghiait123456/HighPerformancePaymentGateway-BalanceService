@@ -10,7 +10,7 @@ type Balance struct {
 }
 
 const (
-	STATUS_ACTIVE = "active"
+	BALANCE_STATUS_ACTIVE = "active"
 )
 
 // TableName overrides
@@ -19,5 +19,9 @@ func (b *Balance) TableName() string {
 }
 
 func (b *Balance) IsActive() bool {
-	return b.Status == STATUS_ACTIVE
+	return b.Status == BALANCE_STATUS_ACTIVE
+}
+
+func (b *Balance) StatusActive() string {
+	return BALANCE_STATUS_ACTIVE
 }

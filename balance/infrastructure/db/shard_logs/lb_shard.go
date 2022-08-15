@@ -1,28 +1,35 @@
 package shard_logs
 
 import (
+	"fmt"
+	"gorm.io/gorm"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository_other_service"
 	"math"
+	"os"
 	"sync/atomic"
 )
 
 type lbShard struct {
-	allPShard allPShard
+	allPShard  allPShard
+	allConnect map[string]Connect //[shardCode]Connect
+
 }
 
 type lbShardInterface interface {
 	// loadBalanceShard select one shard in pool
-	loadBalanceShard(partnerCode string) Shard
+	loadBalanceShard(partnerCode string) *gorm.DB
 	InitConnectAllShard() error
 	UpdateConnectAllShard() error
 }
 
-func (lb *lbShard) loadBalanceShard(partnerCode string) Shard {
+func (lb *lbShard) loadBalanceShard(partnerCode string) *gorm.DB {
 	partnerShard, ok := lb.allPShard[partnerCode]
 	if !ok {
 
 	}
 	if partnerShard.totalShard == 1 {
-		for _, v := range partnerShard.listShard {
+		for _, v := range partnerShard.listConnect {
 			return v
 		}
 	}
@@ -32,26 +39,81 @@ func (lb *lbShard) loadBalanceShard(partnerCode string) Shard {
 	if partnerShard.indexShard == math.MaxUint64 {
 		partnerShard.indexShard = 0
 	}
-	shardId := partnerShard.indexShard % uint64(partnerShard.totalShard)
 
-	return partnerShard.listShard[uint(shardId)]
+	shardId := partnerShard.indexShard % uint64(partnerShard.totalShard)
+	if shardId > uint64(len(partnerShard.listCodeShard))-1 {
+		panic(fmt.Sprintf("totalShard not match listCodeShard, partnerCode %s", partnerCode))
+		os.Exit(0)
+	}
+	shardCode := partnerShard.listCodeShard[uint(shardId)]
+
+	return partnerShard.listConnect[shardCode]
 }
 
 func (lb *lbShard) InitAllShard() error {
-	// get all ShardBalane
+	banlancerShardRp := repository.NewBalanceShardRepository()
+	partnerBalanceShardRp := repository.NewPartnerBalanceShardRepository()
+	parnterRp := repository_other_service.NewPartnerRepository()
 
-	//bsr := repository.NewBalanceShardRepository(ctx)
-	//
-	////get all Partner
-	//ctxP, cancelP := context.WithTimeout(context.Background(), 600*time.Millisecond)
-	//defer cancelP()
-	//pbs := repository.NewPartnerBalanceShardRepository(ctxP)
-	//
-	//allBsr, err := bsr.AllBalanceShard()
-	//if err != nil {
-	//	return err
-	//}
+	// init connect all shard
+	allBalanceShardAct, errABl := banlancerShardRp.AllBalanceShardActive()
+	if errABl != nil {
+		return errABl
+	}
 
-	//allShardBalance :=
+	for _, v := range allBalanceShardAct {
+		db, err := NewConnectShard().ConnectOneShard(v.GetShardDsn())
+		if err != nil {
+			errMessage := fmt.Sprintf("don't connect DB shard balance why error: %s", err.Error())
+			panic(errMessage)
+			os.Exit(0)
+		}
+
+		lb.allConnect[v.ShardCode] = db
+	}
+
+	// map connect to partner
+	allPartnerCodeAct := parnterRp.AllPartnerCodeActive()
+
+	for _, partnerCode := range allPartnerCodeAct {
+		var oneP onePartnerShard
+		oneBalanceShard, ok := allBalanceShardAct[partnerCode]
+		if !ok {
+			errM := fmt.Sprintf("missing config balance shard of parterCode: %s", partnerCode)
+			panic(errM)
+			os.Exit(0)
+		}
+
+		allShardOfPartner, errShardOP := partnerBalanceShardRp.GetAllActiveByPartner(partnerCode)
+		if errShardOP != nil {
+			return errShardOP
+		}
+
+		allShardCode := allShardOfPartner.GetAllShardCode()
+
+		oneP.partnerCode = partnerCode
+		oneP.status = "active"
+		oneP.totalShard = uint(len(allShardOfPartner))
+		oneP.indexShard = 0
+		oneP.listCodeShard = allShardCode
+
+		//init all shard one partner
+		for _, v := range allShardOfPartner {
+			var oneShard Shard
+			oneShard.shardId = v.ShardId
+			oneShard.shardCode = v.ShardCode
+			oneShard.dsnEncry = oneBalanceShard.ShardDsnEncry
+			oneShard.dnsRaw = oneBalanceShard.GetShardDsn()
+			oneShard.db, ok = lb.allConnect[v.ShardCode]
+			if !ok {
+				panic(fmt.Sprintf("shardCode %s don't match in allconect %v", v.ShardCode, lb.allConnect))
+			}
+
+			oneP.listConnect[v.ShardCode] = oneShard.db
+			oneP.listShard[v.ShardCode] = oneShard
+			oneP.trafficShard[v.ShardCode] = trafficShard{}
+		}
+	}
+
 	return nil
 }
