@@ -7,16 +7,18 @@ import (
 
 const valueStop = 1
 
-type emergencyStop struct {
-	stop uint32
-	mu   sync.Mutex
-}
+type (
+	emergencyStop struct {
+		stop uint32
+		mu   sync.Mutex
+	}
 
-type emergencyStopInterface interface {
-	init()
-	IsStop() bool
-	ThrowEmergencyStop()
-}
+	emergencyStopInterface interface {
+		init()
+		IsStop() bool
+		ThrowEmergencyStop()
+	}
+)
 
 func (e *emergencyStop) init() {
 	e.stop = 0

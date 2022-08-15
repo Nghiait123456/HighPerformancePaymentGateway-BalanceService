@@ -6,42 +6,44 @@ import (
 	"sync"
 )
 
-type balancerRequest struct {
-	amountRequest         uint
-	partnerCode           string
-	partnerIdentification uint
-	// create order, update amount when partner recharge
-	typeRequest string
-}
+type (
+	balancerRequest struct {
+		amountRequest         uint
+		partnerCode           string
+		partnerIdentification uint
+		// create order, update amount when partner recharge
+		typeRequest string
+	}
+
+	partnerBalance struct {
+		partnerCode           string
+		partnerName           string
+		partnerIdentification uint
+		amountTotal           uint
+		amountPlaceHolder     uint
+		status                string
+		muLock                sync.Mutex
+	}
+
+	calculatorBalancerInterface interface {
+		isValidAmount() bool
+		isApproveOrder(b balancerRequest) (bool, string)
+		increaseAmount(amountRequest uint) error
+		increaseAmountPlaceHolder(amountRequest uint) error
+		decreaseAmount(amountRequest uint) error
+		decreaseAmountPlaceHolder(amountRequest uint) error
+		HandleOneRequestBalance(b balancerRequest) (bool, error)
+		updateRequestApprovedLocalInMemory(b balancerRequest)
+		saveLogsPlaceHolder(b balancerRequest) (bool, error)
+		updateRequestApprovedDB(b balancerRequest) (bool, error)
+		saveLogsAmountReCharge(b balancerRequest) (bool, error)
+	}
+)
 
 var (
 	typeRequestPayment  = "payment"
 	typeRequestRecharge = "recharge"
 )
-
-type partnerBalance struct {
-	partnerCode           string
-	partnerName           string
-	partnerIdentification uint
-	amountTotal           uint
-	amountPlaceHolder     uint
-	status                string
-	muLock                sync.Mutex
-}
-
-type calculatorBalancerInterface interface {
-	isValidAmount() bool
-	isApproveOrder(b balancerRequest) (bool, string)
-	increaseAmount(amountRequest uint) error
-	increaseAmountPlaceHolder(amountRequest uint) error
-	decreaseAmount(amountRequest uint) error
-	decreaseAmountPlaceHolder(amountRequest uint) error
-	HandleOneRequestBalance(b balancerRequest) (bool, error)
-	updateRequestApprovedLocalInMemory(b balancerRequest)
-	saveLogsPlaceHolder(b balancerRequest) (bool, error)
-	updateRequestApprovedDB(b balancerRequest) (bool, error)
-	saveLogsAmountReCharge(b balancerRequest) (bool, error)
-}
 
 func (pB *partnerBalance) isValidAmount() bool {
 	return pB.amountTotal >= 0 && pB.amountPlaceHolder >= 0 && pB.amountTotal >= pB.amountPlaceHolder

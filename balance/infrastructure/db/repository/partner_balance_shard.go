@@ -7,23 +7,25 @@ import (
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
-type PartnerBalanceShard struct {
-	DB                *gorm.DB
-	PartnerBalanceOrm orm.PartnerBalanceShard
-	BaseRepo          BaseInterface
-}
+type (
+	PartnerBalanceShard struct {
+		DB                *gorm.DB
+		PartnerBalanceOrm orm.PartnerBalanceShard
+		BaseRepo          BaseInterface
+	}
 
-type PartnerBalanceShardInterface interface {
-	SetTimeout(timeout uint32)
-	ResetTimeout()
-	SetContext(ctx context.Context)
-	ResetContext()
-	GetById(id uint32) (orm.PartnerBalanceShard, error)
-	CreateNew(bll orm.PartnerBalanceShard) error
-	UpdateAllField(update orm.PartnerBalanceShard) error
-	UpdateById(id uint32, update map[string]interface{}) error
-	GetAllActiveByPartner(partnerCode string) (entity.PartnerBalanceShards, error)
-}
+	PartnerBalanceShardInterface interface {
+		SetTimeout(timeout uint32)
+		ResetTimeout()
+		SetContext(ctx context.Context)
+		ResetContext()
+		GetById(id uint32) (orm.PartnerBalanceShard, error)
+		CreateNew(bll orm.PartnerBalanceShard) error
+		UpdateAllField(update orm.PartnerBalanceShard) error
+		UpdateById(id uint32, update map[string]interface{}) error
+		GetAllActiveByPartner(partnerCode string) (entity.PartnerBalanceShards, error)
+	}
+)
 
 func (rp *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, error) {
 	var shard orm.PartnerBalanceShard

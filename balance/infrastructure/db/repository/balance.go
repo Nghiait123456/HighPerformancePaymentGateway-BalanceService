@@ -6,24 +6,26 @@ import (
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
-type Balance struct {
-	DB         *gorm.DB
-	BalanceOrm orm.Balance
-	BaseRepo   BaseInterface
-}
+type (
+	Balance struct {
+		DB         *gorm.DB
+		BalanceOrm orm.Balance
+		BaseRepo   BaseInterface
+	}
 
-type BalanceInterface interface {
-	SetTimeout(timeout uint32)
-	ResetTimeout()
-	SetContext(ctx context.Context)
-	ResetContext()
-	GetById(id uint32) (orm.Balance, error)
-	GetByPartnerCode(partnerCode string) (orm.Balance, error)
-	CreateNew(bl orm.Balance) error
-	UpdateAllField(update orm.Balance) error
-	UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error
-	UpdateById(id uint32, update map[string]interface{}) error
-}
+	BalanceInterface interface {
+		SetTimeout(timeout uint32)
+		ResetTimeout()
+		SetContext(ctx context.Context)
+		ResetContext()
+		GetById(id uint32) (orm.Balance, error)
+		GetByPartnerCode(partnerCode string) (orm.Balance, error)
+		CreateNew(bl orm.Balance) error
+		UpdateAllField(update orm.Balance) error
+		UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error
+		UpdateById(id uint32, update map[string]interface{}) error
+	}
+)
 
 func (rp *Balance) GetById(id uint32) (orm.Balance, error) {
 	var balance orm.Balance

@@ -6,25 +6,27 @@ import (
 	"time"
 )
 
-type Base struct {
-	ctx          context.Context
-	CancelFc     context.CancelFunc
-	isUseContext bool
-	timeOut      uint32 // ms
-	isUseTimeout bool
-}
+type (
+	Base struct {
+		ctx          context.Context
+		CancelFc     context.CancelFunc
+		isUseContext bool
+		timeOut      uint32 // ms
+		isUseTimeout bool
+	}
 
-type BaseInterface interface {
-	SetTimeout(timeout uint32)
-	ResetTimeout()
-	SetContext(ctx context.Context)
-	ResetContext()
-	IsUseTimeout() bool
-	IsUseContext() bool
-	UpdateContext(db *gorm.DB)
-	IsHaveCancelFc() bool
-	GetCancelFc() context.CancelFunc
-}
+	BaseInterface interface {
+		SetTimeout(timeout uint32)
+		ResetTimeout()
+		SetContext(ctx context.Context)
+		ResetContext()
+		IsUseTimeout() bool
+		IsUseContext() bool
+		UpdateContext(db *gorm.DB)
+		IsHaveCancelFc() bool
+		GetCancelFc() context.CancelFunc
+	}
+)
 
 //SetTimeout ms
 func (b *Base) SetTimeout(timeout uint32) {

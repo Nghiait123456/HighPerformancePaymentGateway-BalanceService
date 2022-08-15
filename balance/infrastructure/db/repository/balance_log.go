@@ -6,23 +6,25 @@ import (
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
-type BalanceLog struct {
-	DB         *gorm.DB
-	BalanceOrm orm.Balance
-	BaseRepo   BaseInterface
-}
+type (
+	BalanceLog struct {
+		DB         *gorm.DB
+		BalanceOrm orm.Balance
+		BaseRepo   BaseInterface
+	}
 
-type BalanceLogInterface interface {
-	SetTimeout(timeout uint32)
-	ResetTimeout()
-	SetContext(ctx context.Context)
-	ResetContext()
-	GetById(id uint32) (orm.BalanceLog, error)
-	CreateNew(bll orm.BalanceLog) error
-	UpdateAllField(update orm.BalanceLog) error
-	UpdateByOrderId(orderId uint64, update map[string]interface{}) error
-	UpdateById(id uint32, update map[string]interface{}) error
-}
+	BalanceLogInterface interface {
+		SetTimeout(timeout uint32)
+		ResetTimeout()
+		SetContext(ctx context.Context)
+		ResetContext()
+		GetById(id uint32) (orm.BalanceLog, error)
+		CreateNew(bll orm.BalanceLog) error
+		UpdateAllField(update orm.BalanceLog) error
+		UpdateByOrderId(orderId uint64, update map[string]interface{}) error
+		UpdateById(id uint32, update map[string]interface{}) error
+	}
+)
 
 func (rp *BalanceLog) GetById(id uint32) (orm.BalanceLog, error) {
 	var balanceLog orm.BalanceLog

@@ -16,22 +16,24 @@ func EmergencyStop() emergencyStopInterface {
 	return EmergencyS
 }
 
-type allPartner struct {
-	allPartner map[string]partnerBalance
-	muLock     sync.Mutex
-}
+type (
+	allPartner struct {
+		allPartner map[string]partnerBalance
+		muLock     sync.Mutex
+	}
 
-type allPartnerInterface interface {
-	initPartnersInterface
-}
+	allPartnerInterface interface {
+		initPartnersInterface
+	}
 
-type initPartnersInterface interface {
-	LoadAllPartnerInfo() (map[string]partnerBalance, error)
-	InitAllPartnerInfo() error
-	UpdateOnePartner(p partnerBalance) error
-	GetOnePartner(partnerCode string) (partnerBalance, error)
-	getKeyOnePartner(p partnerBalance) string
-}
+	initPartnersInterface interface {
+		LoadAllPartnerInfo() (map[string]partnerBalance, error)
+		InitAllPartnerInfo() error
+		UpdateOnePartner(p partnerBalance) error
+		GetOnePartner(partnerCode string) (partnerBalance, error)
+		getKeyOnePartner(p partnerBalance) string
+	}
+)
 
 func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) {
 	fake := make(map[string]partnerBalance)

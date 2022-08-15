@@ -1,23 +1,25 @@
 package calculator
 
-type balancePlaceHolderHistory struct {
-	allAmountPlaceHolder allAmountPlaceHolderFrLogs
-}
+type (
+	balancePlaceHolderHistory struct {
+		allAmountPlaceHolder allAmountPlaceHolderFrLogs
+	}
 
-//amountPlaceHolderFrLogs
-type amountPlaceHolderFrLogs struct {
-	partnerCode       string
-	amountPlaceHolder uint
-}
+	balancePlaceHolderHistoryInterface interface {
+		allPartnerCode() []string
+		loadAllPlaceHolderAmountFrLogs() allAmountPlaceHolderFrLogs
+		initBalancePlaceHolderHistory() error
+		GetAllPlaceHolder() allAmountPlaceHolderFrLogs
+	}
 
-type allAmountPlaceHolderFrLogs map[string]amountPlaceHolderFrLogs
+	//amountPlaceHolderFrLogs
+	amountPlaceHolderFrLogs struct {
+		partnerCode       string
+		amountPlaceHolder uint
+	}
 
-type balancePlaceHolderHistoryInterface interface {
-	allPartnerCode() []string
-	loadAllPlaceHolderAmountFrLogs() allAmountPlaceHolderFrLogs
-	initBalancePlaceHolderHistory() error
-	GetAllPlaceHolder() allAmountPlaceHolderFrLogs
-}
+	allAmountPlaceHolderFrLogs map[string]amountPlaceHolderFrLogs
+)
 
 func (b *balancePlaceHolderHistory) allPartnerCode() []string {
 	fake := []string{"test"}
