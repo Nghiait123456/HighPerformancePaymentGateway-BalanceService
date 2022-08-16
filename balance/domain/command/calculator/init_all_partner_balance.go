@@ -3,6 +3,7 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/shard_balance_logs"
 	"sync"
 )
 
@@ -12,8 +13,9 @@ all information partner for calculator balance
 
 type (
 	allPartner struct {
-		allPartner map[string]partnerBalance
-		muLock     sync.Mutex
+		allPartner        map[string]partnerBalance
+		muLock            sync.Mutex
+		lbShardBalanceLog shard_balance_logs.LBShardLogInterface
 	}
 
 	allPartnerInterface interface {
@@ -39,9 +41,9 @@ func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) 
 		amountPlaceHolder:     4,
 		status:                "active",
 		muLock:                sync.Mutex{},
+		lbShardBalanceLog:     allP.lbShardBalanceLog,
 	}
 
-	//todo pass ebStop and LbLock from global data init to function
 	return fake, nil
 }
 

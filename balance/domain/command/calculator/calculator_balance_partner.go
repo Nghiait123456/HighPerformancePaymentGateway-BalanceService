@@ -27,7 +27,7 @@ type (
 		amountPlaceHolder     uint64
 		status                string
 		muLock                sync.Mutex
-		EStop                 emergencyStopInterface
+		EStop                 emergencyStop
 		lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
 	}
 
@@ -138,7 +138,7 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 		saveLog:           shard_balance_logs.SaveLog{},
 		lbShardBalanceLog: pB.lbShardBalanceLog,
 	}
-	
+
 	updatedDB, errUDB := pB.saveRequestApprovedDB(saveLogsDB)
 	if !updatedDB {
 		return false, errUDB
