@@ -15,7 +15,7 @@ type (
 	//amountPlaceHolderFrLogs
 	amountPlaceHolderFrLogs struct {
 		partnerCode       string
-		amountPlaceHolder uint
+		amountPlaceHolder uint64
 	}
 
 	allAmountPlaceHolderFrLogs map[string]amountPlaceHolderFrLogs // [partnerCode]amountPlaceHolderFrLogs
@@ -34,6 +34,7 @@ func (b *balancePlaceHolderHistory) loadAllPlaceHolderAmountFrLogs() allAmountPl
 	}
 	return fake
 }
+
 func (b *balancePlaceHolderHistory) initBalancePlaceHolderHistory() error {
 	allAmountPlaceHolder := b.loadAllPlaceHolderAmountFrLogs()
 	for k, v := range allAmountPlaceHolder {

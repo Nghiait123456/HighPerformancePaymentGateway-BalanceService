@@ -3,14 +3,18 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/shard_balance_logs"
 	"sync"
+	"time"
 )
 
 type (
 	balancerRequest struct {
-		amountRequest         uint
+		amountRequest         uint64
 		partnerCode           string
 		partnerIdentification uint
+		orderID               uint64
 		// create order, update amount when partner recharge
 		typeRequest string
 	}
@@ -19,13 +23,20 @@ type (
 		partnerCode           string
 		partnerName           string
 		partnerIdentification uint
-		amountTotal           uint
-		amountPlaceHolder     uint
+		amountTotal           uint64
+		amountPlaceHolder     uint64
 		status                string
 		muLock                sync.Mutex
 		EStop                 emergencyStopInterface
+		lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
 	}
 
+	saveLogsDB struct {
+		b                 balancerRequest
+		pb                partnerBalance
+		lbShardBalanceLog shard_balance_logs.LBShardLogInterface
+		saveLog           shard_balance_logs.SaveLogInterface
+	}
 	partnerBalanceInterface interface {
 		calculatorPartnerBalancerInterface
 	}
@@ -33,15 +44,15 @@ type (
 	calculatorPartnerBalancerInterface interface {
 		isValidAmount() bool
 		isApproveOrder(b balancerRequest) (bool, string)
-		increaseAmount(amountRequest uint)
-		increaseAmountPlaceHolder(amountRequest uint)
-		decreaseAmount(amountRequest uint) error
-		decreaseAmountPlaceHolder(amountRequest uint) error
+		increaseAmount(amountRequest uint64)
+		increaseAmountPlaceHolder(amountRequest uint64)
+		decreaseAmount(amountRequest uint64) error
+		decreaseAmountPlaceHolder(amountRequest uint64) error
 		HandleOneRequestBalance(b balancerRequest) (bool, error)
 		updateRequestApprovedLocalInMemory(b balancerRequest)
-		saveLogsPlaceHolder(b balancerRequest) (bool, error)
-		updateRequestApprovedDB(b balancerRequest) (bool, error)
-		saveLogsAmountReCharge(b balancerRequest) (bool, error)
+		saveLogsPlaceHolder(u saveLogsDB) (bool, error)
+		saveRequestApprovedDB(u saveLogsDB) (bool, error)
+		saveLogsAmountReCharge(u saveLogsDB) (bool, error)
 	}
 )
 
@@ -72,15 +83,15 @@ func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
 	}
 }
 
-func (pB *partnerBalance) increaseAmount(amountRequest uint) {
+func (pB *partnerBalance) increaseAmount(amountRequest uint64) {
 	pB.amountTotal += amountRequest
 }
 
-func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint) {
+func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint64) {
 	pB.amountPlaceHolder += amountRequest
 }
 
-func (pB *partnerBalance) decreaseAmount(amountRequest uint) error {
+func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
 	if pB.amountTotal < amountRequest {
 		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.amountTotal, pB.partnerCode)
 		return errors.New(err)
@@ -90,7 +101,7 @@ func (pB *partnerBalance) decreaseAmount(amountRequest uint) error {
 	return nil
 }
 
-func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint) error {
+func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint64) error {
 	if pB.amountPlaceHolder < amountRequest {
 		err := fmt.Sprintf("amountRequest %i greater than amountPlaceHolder %i in partnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
 		return errors.New(err)
@@ -121,7 +132,14 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 	//update to local in memory
 	pB.updateRequestApprovedLocalInMemory(b)
 
-	updatedDB, errUDB := pB.updateRequestApprovedDB(b)
+	saveLogsDB := saveLogsDB{
+		b:                 b,
+		pb:                pB.ValueObject(),
+		saveLog:           shard_balance_logs.SaveLog{},
+		lbShardBalanceLog: pB.lbShardBalanceLog,
+	}
+	
+	updatedDB, errUDB := pB.saveRequestApprovedDB(saveLogsDB)
 	if !updatedDB {
 		return false, errUDB
 	}
@@ -137,20 +155,17 @@ func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b balancerReques
 	pB.increaseAmountPlaceHolder(b.amountRequest)
 }
 
-func (pB *partnerBalance) updateTypeRequestPaymentDB(b balancerRequest) (bool, error) {
-	// save log place holder
-	saveLog1, errSL1 := pB.saveLogsPlaceHolder(b)
-	if !saveLog1 {
-		//try again
-		saveLog2, errSL2 := pB.saveLogsPlaceHolder(b)
-		if !saveLog2 {
-			pB.EStop.ThrowEmergencyStop()
-			err := fmt.Sprintf("updateTypeRequestPaymentDB error, err1: %s, err2 : %s ", errSL1.Error(), errSL2.Error())
-			panic(err)
-		}
-	}
+func (pB *partnerBalance) ValueObject() partnerBalance {
+	pBNews := *pB
+	pBNews.muLock = sync.Mutex{}
+	pBNews.EStop = nil
+	return pBNews
+}
 
-	return true, nil
+func (pB *partnerBalance) saveTypeRequestPaymentDB(u saveLogsDB) (bool, error) {
+	// save log place holder
+	status, err := pB.saveLogsPlaceHolder(u)
+	return status, err
 }
 
 func (pB *partnerBalance) updateTypeRequestRechargeLocalInMemory(b balancerRequest) {
@@ -158,20 +173,10 @@ func (pB *partnerBalance) updateTypeRequestRechargeLocalInMemory(b balancerReque
 	pB.increaseAmount(b.amountRequest)
 }
 
-func (pB *partnerBalance) updateTypeRequestRechargeDB(b balancerRequest) (bool, error) {
+func (pB *partnerBalance) saveTypeRequestRechargeDB(s saveLogsDB) (bool, error) {
 	// save log place holder
-	saveLog1, errSL1 := pB.saveLogsAmountReCharge(b)
-	if !saveLog1 {
-		//try again
-		saveLog2, errSL2 := pB.saveLogsAmountReCharge(b)
-		if !saveLog2 {
-			pB.EStop.ThrowEmergencyStop()
-			err := fmt.Sprintf("updateTypeRequestRechargeDB error, err1: %s, err2: %s", errSL1.Error(), errSL2.Error())
-			panic(err)
-		}
-	}
-
-	return true, nil
+	status, err := pB.saveLogsAmountReCharge(s)
+	return status, err
 }
 
 func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b balancerRequest) {
@@ -187,26 +192,41 @@ func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b balancerRequest) 
 	}
 }
 
-func (pB *partnerBalance) updateRequestApprovedDB(b balancerRequest) (bool, error) {
-	switch b.typeRequest {
+func (pB *partnerBalance) saveRequestApprovedDB(s saveLogsDB) (bool, error) {
+	switch s.b.typeRequest {
 	case typeRequestPayment:
-		return pB.updateTypeRequestPaymentDB(b)
+		return pB.saveTypeRequestPaymentDB(s)
 	case typeRequestRecharge:
-		return pB.updateTypeRequestRechargeDB(b)
+		return pB.saveTypeRequestRechargeDB(s)
 
 	default:
-		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", s.b.typeRequest)
 		panic(err)
 	}
 }
 
-func (pB *partnerBalance) saveLogsPlaceHolder(b balancerRequest) (bool, error) {
-	// todo save logs to DB logs requet balance, begin transaction, db is sharding
+func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
+	var bl orm.BalanceLog
+
+	bl.OrderId = s.b.orderID
+	bl.PartnerCode = s.b.partnerCode
+	bl.AmountRequest = s.b.amountRequest
+	bl.AmountPlaceHolder = s.pb.amountPlaceHolder
+	bl.Balance = s.pb.amountTotal
+	bl.Status = orm.BalanceLog{}.StatusProcessing()
+	bl.CreatedAt = uint32(time.Now().Unix())
+	bl.UpdatedAt = uint32(time.Now().Unix())
+
+	ok := s.saveLog.Save(s.lbShardBalanceLog, bl)
+	if ok != nil {
+		return false, ok
+	}
+
 	return true, nil
 }
 
 // SaveLogsAmountReCharge save in same DB with totalAmount Balance
-func (pB *partnerBalance) saveLogsAmountReCharge(b balancerRequest) (bool, error) {
+func (pB *partnerBalance) saveLogsAmountReCharge(u saveLogsDB) (bool, error) {
 	// todo start transacions, update amount and update logs
 	return true, nil
 }

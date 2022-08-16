@@ -8,8 +8,8 @@ import (
 
 type (
 	BalanceLog struct {
-		BalanceOrm orm.Balance
-		BaseRepo   BaseInterface
+		BalanceLogOrm orm.BalanceLog
+		BaseRepo      BaseInterface
 	}
 
 	BalanceLogInterface interface {
@@ -21,6 +21,7 @@ type (
 		ResetContext()
 		GetById(id uint32) (orm.BalanceLog, error)
 		CreateNew(bll orm.BalanceLog) error
+		CreateNewWithTrans(bll orm.BalanceLog) error
 		UpdateAllField(update orm.BalanceLog) error
 		UpdateByOrderId(orderId uint64, update map[string]interface{}) error
 		UpdateById(id uint32, update map[string]interface{}) error
@@ -62,6 +63,23 @@ func (rp *BalanceLog) CreateNew(bll orm.BalanceLog) error {
 		return rs.Error
 	}
 
+	return nil
+}
+
+func (rp *BalanceLog) CreateNewWithTrans(bll orm.BalanceLog) error {
+	rp.BaseRepo.UpdateContext()
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	tx := rp.DB().Begin()
+	rs := tx.Create(&bll)
+	if rs.Error != nil {
+		tx.Rollback()
+		return rs.Error
+	}
+
+	tx.Commit()
 	return nil
 }
 

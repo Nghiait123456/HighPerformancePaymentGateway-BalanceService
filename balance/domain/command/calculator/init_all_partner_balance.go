@@ -41,6 +41,7 @@ func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) 
 		muLock:                sync.Mutex{},
 	}
 
+	//todo pass ebStop and LbLock from global data init to function
 	return fake, nil
 }
 

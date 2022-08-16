@@ -12,20 +12,20 @@ import (
 /**
 lb for infra sharding table balance_log
 */
-type lbShardLog struct {
+type LBShardLog struct {
 	allPShard  allPShard
 	allConnect map[string]Connect //[shardCode]Connect
 
 }
 
-type lbShardLogInterface interface {
+type LBShardLogInterface interface {
 	// loadBalanceShard select one shard in pool
 	loadBalanceShard(partnerCode string) Connect
 	InitAllShard() error
 	UpdateConnectAllShard() error
 }
 
-func (lb *lbShardLog) loadBalanceShard(partnerCode string) Connect {
+func (lb *LBShardLog) loadBalanceShard(partnerCode string) Connect {
 	partnerShard, ok := lb.allPShard[partnerCode]
 	if !ok {
 
@@ -52,7 +52,7 @@ func (lb *lbShardLog) loadBalanceShard(partnerCode string) Connect {
 	return partnerShard.listConnect[shardCode]
 }
 
-func (lb *lbShardLog) InitAllShard() error {
+func (lb *LBShardLog) InitAllShard() error {
 	banlancerShardRp := repository.NewBalanceShardRepository()
 	partnerBalanceShardRp := repository.NewPartnerBalanceShardRepository()
 	parnterRp := repository_other_service.NewPartnerRepository()
@@ -122,10 +122,10 @@ func (lb *lbShardLog) InitAllShard() error {
 	return nil
 }
 
-func (lb *lbShardLog) UpdateConnectAllShard() error {
+func (lb *LBShardLog) UpdateConnectAllShard() error {
 	return lb.InitAllShard()
 }
 
-func NewLBShardLog() lbShardLogInterface {
-	return &lbShardLog{}
+func NewLBShardLog() LBShardLogInterface {
+	return &LBShardLog{}
 }
