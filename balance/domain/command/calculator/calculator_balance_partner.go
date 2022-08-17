@@ -156,15 +156,19 @@ func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b balancerReques
 }
 
 func (pB *partnerBalance) ValueObject() partnerBalance {
-	pBNews := *pB
-	pBNews.muLock = sync.Mutex{}
-	pBNews.EStop = nil
-	return pBNews
+	pBValue := partnerBalance{}
+	pBValue.partnerCode = pB.partnerCode
+	pBValue.partnerName = pB.partnerName
+	pBValue.partnerIdentification = pB.partnerIdentification
+	pBValue.amountPlaceHolder = pB.amountPlaceHolder
+	pBValue.status = pB.status
+
+	return pBValue
 }
 
-func (pB *partnerBalance) saveTypeRequestPaymentDB(u saveLogsDB) (bool, error) {
+func (pB *partnerBalance) saveTypeRequestPaymentDB(s saveLogsDB) (bool, error) {
 	// save log place holder
-	status, err := pB.saveLogsPlaceHolder(u)
+	status, err := pB.saveLogsPlaceHolder(s)
 	return status, err
 }
 
