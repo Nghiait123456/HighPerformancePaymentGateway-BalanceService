@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/shard_balance_logs"
+	"os"
 	"sync"
 	"time"
 )
@@ -50,6 +51,7 @@ type (
 		decreaseAmountPlaceHolder(amountRequest uint64) error
 		HandleOneRequestBalance(b balancerRequest) (bool, error)
 		updateRequestApprovedLocalInMemory(b balancerRequest)
+		revertRequestApprovedLocalInMemory(b balancerRequest) error
 		saveLogsPlaceHolder(u saveLogsDB) (bool, error)
 		saveRequestApprovedDB(u saveLogsDB) (bool, error)
 		saveLogsAmountReCharge(u saveLogsDB) (bool, error)
@@ -141,6 +143,12 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 
 	updatedDB, errUDB := pB.saveRequestApprovedDB(saveLogsDB)
 	if !updatedDB {
+		//revert if error
+		errRv := pB.revertRequestApprovedLocalInMemory(b)
+		if errRv != nil {
+			panic(fmt.Sprintf("don't revert request approved ib local in memory, err: %s", errRv.Error()))
+			os.Exit(0)
+		}
 		return false, errUDB
 	}
 
@@ -153,6 +161,11 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b balancerRequest) {
 	// update local in memory
 	pB.increaseAmountPlaceHolder(b.amountRequest)
+}
+
+func (pB *partnerBalance) revertTypeRequestPaymentLocalInMemory(b balancerRequest) error {
+	// update local in memory
+	return pB.decreaseAmountPlaceHolder(b.amountRequest)
 }
 
 func (pB *partnerBalance) ValueObject() partnerBalance {
@@ -177,6 +190,11 @@ func (pB *partnerBalance) updateTypeRequestRechargeLocalInMemory(b balancerReque
 	pB.increaseAmount(b.amountRequest)
 }
 
+func (pB *partnerBalance) revertTypeRequestRechargeLocalInMemory(b balancerRequest) error {
+	// update local in memory
+	return pB.decreaseAmount(b.amountRequest)
+}
+
 func (pB *partnerBalance) saveTypeRequestRechargeDB(s saveLogsDB) (bool, error) {
 	// save log place holder
 	status, err := pB.saveLogsAmountReCharge(s)
@@ -189,6 +207,19 @@ func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b balancerRequest) 
 		pB.updateTypeRequestPaymentLocalInMemory(b)
 	case typeRequestRecharge:
 		pB.updateTypeRequestRechargeLocalInMemory(b)
+
+	default:
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		panic(err)
+	}
+}
+
+func (pB *partnerBalance) revertRequestApprovedLocalInMemory(b balancerRequest) error {
+	switch b.typeRequest {
+	case typeRequestPayment:
+		return pB.revertTypeRequestPaymentLocalInMemory(b)
+	case typeRequestRecharge:
+		return pB.revertTypeRequestRechargeLocalInMemory(b)
 
 	default:
 		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)

@@ -1,6 +1,6 @@
 package orm
 
-type BalanceLog struct {
+type BalanceRequestLog struct {
 	ID                uint32 `gorm:"<-:create"`
 	OrderId           uint64 `gorm:"uniqueIndex"`
 	PartnerCode       string
@@ -17,10 +17,10 @@ const (
 )
 
 // TableName overrides
-func (b *BalanceLog) TableName() string {
+func (b *BalanceRequestLog) TableName() string {
 	return "balances_logs"
 }
 
-func (b BalanceLog) StatusProcessing() string {
+func (b BalanceRequestLog) StatusProcessing() string {
 	return BALANCE_LOG_STATUS_PROCESSING
 }

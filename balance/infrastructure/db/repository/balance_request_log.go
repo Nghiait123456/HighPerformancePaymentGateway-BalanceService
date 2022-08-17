@@ -7,29 +7,29 @@ import (
 )
 
 type (
-	BalanceLog struct {
-		BalanceLogOrm orm.BalanceLog
-		BaseRepo      BaseInterface
+	BalanceRequestLog struct {
+		BalanceRQLogOrm orm.BalanceRequestLog
+		BaseRepo        BaseInterface
 	}
 
-	BalanceLogInterface interface {
+	BalanceRequestLogInterface interface {
 		SetConnect(cn sql.Connect)
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
 		ResetContext()
-		GetById(id uint32) (orm.BalanceLog, error)
-		CreateNew(bll orm.BalanceLog) error
-		CreateNewWithTrans(bll orm.BalanceLog) error
-		UpdateAllField(update orm.BalanceLog) error
+		GetById(id uint32) (orm.BalanceRequestLog, error)
+		CreateNew(bll orm.BalanceRequestLog) error
+		CreateNewWithTrans(bll orm.BalanceRequestLog) error
+		UpdateAllField(update orm.BalanceRequestLog) error
 		UpdateByOrderId(orderId uint64, update map[string]interface{}) error
 		UpdateById(id uint32, update map[string]interface{}) error
 	}
 )
 
-func (rp *BalanceLog) GetById(id uint32) (orm.BalanceLog, error) {
-	var balanceLog orm.BalanceLog
+func (rp *BalanceRequestLog) GetById(id uint32) (orm.BalanceRequestLog, error) {
+	var balanceLog orm.BalanceRequestLog
 
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
@@ -44,15 +44,15 @@ func (rp *BalanceLog) GetById(id uint32) (orm.BalanceLog, error) {
 	return balanceLog, nil
 }
 
-func (rp *BalanceLog) SetConnect(cn sql.Connect) {
+func (rp *BalanceRequestLog) SetConnect(cn sql.Connect) {
 	rp.BaseRepo.SetConnect(cn)
 }
 
-func (rp BalanceLog) DB() sql.Connect {
+func (rp BalanceRequestLog) DB() sql.Connect {
 	return rp.BaseRepo.CN()
 }
 
-func (rp *BalanceLog) CreateNew(bll orm.BalanceLog) error {
+func (rp *BalanceRequestLog) CreateNew(bll orm.BalanceRequestLog) error {
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
@@ -66,7 +66,7 @@ func (rp *BalanceLog) CreateNew(bll orm.BalanceLog) error {
 	return nil
 }
 
-func (rp *BalanceLog) CreateNewWithTrans(bll orm.BalanceLog) error {
+func (rp *BalanceRequestLog) CreateNewWithTrans(bll orm.BalanceRequestLog) error {
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
@@ -83,7 +83,7 @@ func (rp *BalanceLog) CreateNewWithTrans(bll orm.BalanceLog) error {
 	return nil
 }
 
-func (rp *BalanceLog) UpdateAllField(update orm.BalanceLog) error {
+func (rp *BalanceRequestLog) UpdateAllField(update orm.BalanceRequestLog) error {
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
@@ -97,13 +97,13 @@ func (rp *BalanceLog) UpdateAllField(update orm.BalanceLog) error {
 	return nil
 }
 
-func (rp *BalanceLog) UpdateById(id uint32, update map[string]interface{}) error {
+func (rp *BalanceRequestLog) UpdateById(id uint32, update map[string]interface{}) error {
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB().Model(&orm.BalanceLog{}).Where("id = ?", id).Updates(update)
+	rs := rp.DB().Model(&orm.BalanceRequestLog{}).Where("id = ?", id).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -111,13 +111,13 @@ func (rp *BalanceLog) UpdateById(id uint32, update map[string]interface{}) error
 	return nil
 }
 
-func (rp *BalanceLog) UpdateByOrderId(orderId uint64, update map[string]interface{}) error {
+func (rp *BalanceRequestLog) UpdateByOrderId(orderId uint64, update map[string]interface{}) error {
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB().Model(&orm.BalanceLog{}).Where("order_id = ?", orderId).Updates(update)
+	rs := rp.DB().Model(&orm.BalanceRequestLog{}).Where("order_id = ?", orderId).Updates(update)
 	if rs.Error != nil {
 		return rs.Error
 	}
@@ -126,25 +126,25 @@ func (rp *BalanceLog) UpdateByOrderId(orderId uint64, update map[string]interfac
 }
 
 //SetTimeout ms
-func (rp *BalanceLog) SetTimeout(timeout uint32) {
+func (rp *BalanceRequestLog) SetTimeout(timeout uint32) {
 	rp.BaseRepo.SetTimeout(timeout)
 }
 
 //ResetTimeout
-func (rp *BalanceLog) ResetTimeout() {
+func (rp *BalanceRequestLog) ResetTimeout() {
 	rp.BaseRepo.ResetTimeout()
 }
 
 //SetTimeout ms
-func (rp *BalanceLog) SetContext(ctx context.Context) {
+func (rp *BalanceRequestLog) SetContext(ctx context.Context) {
 	rp.BaseRepo.SetContext(ctx)
 }
 
 //ResetTimeout
-func (rp *BalanceLog) ResetContext() {
+func (rp *BalanceRequestLog) ResetContext() {
 	rp.BaseRepo.ResetContext()
 }
 
-func NewBalanceLogRepository() BalanceLogInterface {
-	return &BalanceLog{}
+func NewBalanceLogRepository() BalanceRequestLogInterface {
+	return &BalanceRequestLog{}
 }
