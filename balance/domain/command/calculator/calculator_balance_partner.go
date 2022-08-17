@@ -266,21 +266,10 @@ func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
 // SaveLogsAmountReCharge save in same DB with totalAmount Balance
 func (pB *partnerBalance) saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error) {
 	var brl orm.BalanceRechargeLog
-	rPBRL := repository.NewBalanceRechargeLogRepository()
-	rPBL := repository.NewBalanceRepository()
+	var u repository.UpdateLogsAndBalance
+	rp := repository.NewBalanceAndBalanceRequestLogRepository()
 
-	rPBRL.SetConnect(pB.cnRechargeLog)
-	rPBL.SetConnect(pB.cnRechargeLog)
-
-	rPBL.DB().Begin()
-	//update amount
-	errBL := rPBL.UpdateBalanceByPartnerCode(s.pb.partnerCode, s.pb.balance)
-	if errBL != nil {
-		rPBL.DB().Rollback()
-		return false, errBL
-	}
-
-	// update log
+	// BalanceRechargeLog
 	brl.OrderId = s.b.orderID
 	brl.PartnerCode = s.b.partnerCode
 	brl.AmountRecharge = s.b.amountRequest
@@ -289,13 +278,17 @@ func (pB *partnerBalance) saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error
 	brl.CreatedAt = uint32(time.Now().Unix())
 	brl.UpdatedAt = uint32(time.Now().Unix())
 
-	erPBRL := rPBRL.CreateNew(brl)
-	if erPBRL != nil {
-		rPBL.DB().Rollback()
-		return false, erPBRL
+	// init update data
+	u.PartnerCode = s.pb.partnerCode
+	u.Balance = s.pb.balance
+	u.Log = brl
+	u.CN = pB.cnRechargeLog
+
+	err := rp.SaveLogsAndUpdateBalanceReChargeDB(u)
+	if err != nil {
+		return false, err
 	}
 
-	rPBL.DB().Commit()
 	return true, nil
 }
 
