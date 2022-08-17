@@ -24,6 +24,7 @@ type (
 		CreateNew(bl orm.Balance) error
 		UpdateAllField(update orm.Balance) error
 		UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error
+		UpdateBalanceByPartnerCode(partnerCode string, balance uint64) error
 		UpdateById(id uint32, update map[string]interface{}) error
 	}
 )
@@ -103,6 +104,20 @@ func (rp *Balance) UpdateByPartnerCode(partnerCode string, update map[string]int
 	}
 
 	rs := rp.DB().Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Updates(update)
+	if rs.Error != nil {
+		return rs.Error
+	}
+
+	return nil
+}
+
+func (rp *Balance) UpdateBalanceByPartnerCode(partnerCode string, balance uint64) error {
+	rp.BaseRepo.UpdateContext()
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB().Model(&orm.Balance{}).Where("partner_code = ?", partnerCode).Update("balance", balance)
 	if rs.Error != nil {
 		return rs.Error
 	}

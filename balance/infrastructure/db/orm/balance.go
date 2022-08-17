@@ -2,7 +2,7 @@ package orm
 
 type Balance struct {
 	ID          uint32 `gorm:"<-:create"`
-	Balance     uint32
+	Balance     uint64
 	PartnerCode string
 	Status      string
 	CreatedAt   uint32

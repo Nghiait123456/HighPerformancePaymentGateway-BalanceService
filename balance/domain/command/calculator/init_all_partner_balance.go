@@ -3,6 +3,7 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/shard_balance_logs"
 	"sync"
 )
@@ -16,6 +17,7 @@ type (
 		allPartner        map[string]partnerBalance
 		muLock            sync.Mutex
 		lbShardBalanceLog shard_balance_logs.LBShardLogInterface
+		cnRechargeLog     sql.Connect
 	}
 
 	allPartnerInterface interface {
@@ -42,6 +44,7 @@ func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) 
 		status:                "active",
 		muLock:                sync.Mutex{},
 		lbShardBalanceLog:     allP.lbShardBalanceLog,
+		cnRechargeLog:         allP.cnRechargeLog,
 	}
 
 	return fake, nil

@@ -3,7 +3,9 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/shard_balance_logs"
 	"os"
 	"sync"
@@ -24,19 +26,20 @@ type (
 		partnerCode           string
 		partnerName           string
 		partnerIdentification uint
-		amountTotal           uint64
+		balance               uint64
 		amountPlaceHolder     uint64
 		status                string
 		muLock                sync.Mutex
 		EStop                 emergencyStop
 		lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
+		cnRechargeLog         sql.Connect
 	}
 
 	saveLogsDB struct {
-		b                 balancerRequest
-		pb                partnerBalance
-		lbShardBalanceLog shard_balance_logs.LBShardLogInterface
-		saveLog           shard_balance_logs.SaveLogInterface
+		b                     balancerRequest
+		pb                    partnerBalance
+		lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
+		saveLogRequestBalance shard_balance_logs.SaveLogRequestBalanceInterface
 	}
 	partnerBalanceInterface interface {
 		calculatorPartnerBalancerInterface
@@ -52,9 +55,9 @@ type (
 		HandleOneRequestBalance(b balancerRequest) (bool, error)
 		updateRequestApprovedLocalInMemory(b balancerRequest)
 		revertRequestApprovedLocalInMemory(b balancerRequest) error
-		saveLogsPlaceHolder(u saveLogsDB) (bool, error)
-		saveRequestApprovedDB(u saveLogsDB) (bool, error)
-		saveLogsAmountReCharge(u saveLogsDB) (bool, error)
+		saveLogsPlaceHolder(s saveLogsDB) (bool, error)
+		saveRequestApprovedDB(s saveLogsDB) (bool, error)
+		saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error)
 	}
 )
 
@@ -64,13 +67,13 @@ var (
 )
 
 func (pB *partnerBalance) isValidAmount() bool {
-	return pB.amountTotal >= 0 && pB.amountPlaceHolder >= 0 && pB.amountTotal >= pB.amountPlaceHolder
+	return pB.balance >= 0 && pB.amountPlaceHolder >= 0 && pB.balance >= pB.amountPlaceHolder
 }
 
 func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
 	switch b.typeRequest {
 	case typeRequestPayment:
-		if b.amountRequest+pB.amountPlaceHolder <= pB.amountTotal {
+		if b.amountRequest+pB.amountPlaceHolder <= pB.balance {
 			return true, ""
 		}
 		return false, "not enough money"
@@ -86,7 +89,7 @@ func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
 }
 
 func (pB *partnerBalance) increaseAmount(amountRequest uint64) {
-	pB.amountTotal += amountRequest
+	pB.balance += amountRequest
 }
 
 func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint64) {
@@ -94,12 +97,12 @@ func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint64) {
 }
 
 func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
-	if pB.amountTotal < amountRequest {
-		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.amountTotal, pB.partnerCode)
+	if pB.balance < amountRequest {
+		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.balance, pB.partnerCode)
 		return errors.New(err)
 	}
 
-	pB.amountTotal -= amountRequest
+	pB.balance -= amountRequest
 	return nil
 }
 
@@ -135,10 +138,10 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 	pB.updateRequestApprovedLocalInMemory(b)
 
 	saveLogsDB := saveLogsDB{
-		b:                 b,
-		pb:                pB.ValueObject(),
-		saveLog:           shard_balance_logs.SaveLog{},
-		lbShardBalanceLog: pB.lbShardBalanceLog,
+		b:                     b,
+		pb:                    pB.ValueObject(),
+		saveLogRequestBalance: shard_balance_logs.SaveLogRequestBalance{},
+		lbShardBalanceLog:     pB.lbShardBalanceLog,
 	}
 
 	updatedDB, errUDB := pB.saveRequestApprovedDB(saveLogsDB)
@@ -196,8 +199,8 @@ func (pB *partnerBalance) revertTypeRequestRechargeLocalInMemory(b balancerReque
 }
 
 func (pB *partnerBalance) saveTypeRequestRechargeDB(s saveLogsDB) (bool, error) {
-	// save log place holder
-	status, err := pB.saveLogsAmountReCharge(s)
+	// save log recharge
+	status, err := pB.saveLogsAndAmountReChargeDB(s)
 	return status, err
 }
 
@@ -241,18 +244,18 @@ func (pB *partnerBalance) saveRequestApprovedDB(s saveLogsDB) (bool, error) {
 }
 
 func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
-	var bl orm.BalanceLog
+	var brl orm.BalanceRequestLog
 
-	bl.OrderId = s.b.orderID
-	bl.PartnerCode = s.b.partnerCode
-	bl.AmountRequest = s.b.amountRequest
-	bl.AmountPlaceHolder = s.pb.amountPlaceHolder
-	bl.Balance = s.pb.amountTotal
-	bl.Status = orm.BalanceLog{}.StatusProcessing()
-	bl.CreatedAt = uint32(time.Now().Unix())
-	bl.UpdatedAt = uint32(time.Now().Unix())
+	brl.OrderId = s.b.orderID
+	brl.PartnerCode = s.b.partnerCode
+	brl.AmountRequest = s.b.amountRequest
+	brl.AmountPlaceHolder = s.pb.amountPlaceHolder
+	brl.Balance = s.pb.balance
+	brl.Status = orm.BalanceRequestLog{}.StatusProcessing()
+	brl.CreatedAt = uint32(time.Now().Unix())
+	brl.UpdatedAt = uint32(time.Now().Unix())
 
-	ok := s.saveLog.Save(s.lbShardBalanceLog, bl)
+	ok := s.saveLogRequestBalance.Save(s.lbShardBalanceLog, brl)
 	if ok != nil {
 		return false, ok
 	}
@@ -261,8 +264,38 @@ func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
 }
 
 // SaveLogsAmountReCharge save in same DB with totalAmount Balance
-func (pB *partnerBalance) saveLogsAmountReCharge(u saveLogsDB) (bool, error) {
-	// todo start transacions, update amount and update logs
+func (pB *partnerBalance) saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error) {
+	var brl orm.BalanceRechargeLog
+	rPBRL := repository.NewBalanceRechargeLogRepository()
+	rPBL := repository.NewBalanceRepository()
+
+	rPBRL.SetConnect(pB.cnRechargeLog)
+	rPBL.SetConnect(pB.cnRechargeLog)
+
+	rPBL.DB().Begin()
+	//update amount
+	errBL := rPBL.UpdateBalanceByPartnerCode(s.pb.partnerCode, s.pb.balance)
+	if errBL != nil {
+		rPBL.DB().Rollback()
+		return false, errBL
+	}
+
+	// update log
+	brl.OrderId = s.b.orderID
+	brl.PartnerCode = s.b.partnerCode
+	brl.AmountRecharge = s.b.amountRequest
+	brl.Balance = s.pb.balance
+	brl.Status = orm.BalanceRechargeLog{}.StatusSuccess()
+	brl.CreatedAt = uint32(time.Now().Unix())
+	brl.UpdatedAt = uint32(time.Now().Unix())
+
+	erPBRL := rPBRL.CreateNew(brl)
+	if erPBRL != nil {
+		rPBL.DB().Rollback()
+		return false, erPBRL
+	}
+
+	rPBL.DB().Commit()
 	return true, nil
 }
 

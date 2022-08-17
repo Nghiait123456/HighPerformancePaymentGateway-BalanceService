@@ -6,15 +6,15 @@ import (
 )
 
 type (
-	SaveLog struct {
+	SaveLogRequestBalance struct {
 	}
 
-	SaveLogInterface interface {
-		Save(lb LBShardLogInterface, log orm.BalanceLog) error
+	SaveLogRequestBalanceInterface interface {
+		Save(lb LBShardLogInterface, log orm.BalanceRequestLog) error
 	}
 )
 
-func (s SaveLog) Save(lb LBShardLogInterface, log orm.BalanceLog) error {
+func (s SaveLogRequestBalance) Save(lb LBShardLogInterface, log orm.BalanceRequestLog) error {
 	rp := repository.NewBalanceLogRepository()
 	cn := lb.loadBalanceShard(log.PartnerCode)
 	rp.SetConnect(cn)
@@ -27,6 +27,6 @@ func (s SaveLog) Save(lb LBShardLogInterface, log orm.BalanceLog) error {
 	return nil
 }
 
-func NewSaveLog() SaveLogInterface {
-	return &SaveLog{}
+func NewSaveLog() SaveLogRequestBalanceInterface {
+	return &SaveLogRequestBalance{}
 }

@@ -13,7 +13,7 @@ type BalanceRequestLog struct {
 }
 
 const (
-	BALANCE_LOG_STATUS_PROCESSING = "processing"
+	BALANCE_REQUEST_LOG_STATUS_PROCESSING = "processing"
 )
 
 // TableName overrides
@@ -22,5 +22,5 @@ func (b *BalanceRequestLog) TableName() string {
 }
 
 func (b BalanceRequestLog) StatusProcessing() string {
-	return BALANCE_LOG_STATUS_PROCESSING
+	return BALANCE_REQUEST_LOG_STATUS_PROCESSING
 }
