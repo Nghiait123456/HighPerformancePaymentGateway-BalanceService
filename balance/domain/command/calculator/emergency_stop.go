@@ -5,8 +5,10 @@ import (
 	"sync/atomic"
 )
 
-const valueStop = 1
-const valueNoStop = 0
+const (
+	valueStop   = 1
+	valueNoStop = 0
+)
 
 type (
 	emergencyStop struct {
