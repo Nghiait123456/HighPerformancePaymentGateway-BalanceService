@@ -3,6 +3,7 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"high-performance-payment-gateway/balance-service/balance/domain/command/commit_balance"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
@@ -28,11 +29,13 @@ type (
 		partnerIdentification uint
 		balance               uint64
 		amountPlaceHolder     uint64
+		indexLogRequestLatest uint64
 		status                string
 		muLock                sync.Mutex
 		EStop                 emergencyStop
 		lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
 		cnRechargeLog         sql.Connect
+		cnBalance             sql.Connect
 	}
 
 	saveLogsDB struct {
@@ -47,12 +50,16 @@ type (
 
 	calculatorPartnerBalancerInterface interface {
 		isValidAmount() bool
+		isCommitBalance() bool
 		isApproveOrder(b balancerRequest) (bool, string)
 		increaseAmount(amountRequest uint64)
 		increaseAmountPlaceHolder(amountRequest uint64)
 		decreaseAmount(amountRequest uint64) error
 		decreaseAmountPlaceHolder(amountRequest uint64) error
+		increaseIndexLogRequestLatest()
 		HandleOneRequestBalance(b balancerRequest) (bool, error)
+		commitPlaceHolderToLocalInMemory() error
+		rollbackCommitPlaceHolderToLocalInMemory() error
 		updateRequestApprovedLocalInMemory(b balancerRequest)
 		revertRequestApprovedLocalInMemory(b balancerRequest) error
 		saveLogsPlaceHolder(s saveLogsDB) (bool, error)
@@ -66,8 +73,12 @@ var (
 	typeRequestRecharge = "recharge"
 )
 
+func (pB *partnerBalance) isCommitBalance() bool {
+	return pB.balance == pB.amountPlaceHolder
+}
+
 func (pB *partnerBalance) isValidAmount() bool {
-	return pB.balance >= 0 && pB.amountPlaceHolder >= 0 && pB.balance >= pB.amountPlaceHolder
+	return pB.balance >= 0 && pB.amountPlaceHolder >= 0 && pB.balance > pB.amountPlaceHolder
 }
 
 func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
@@ -96,6 +107,20 @@ func (pB *partnerBalance) increaseAmountPlaceHolder(amountRequest uint64) {
 	pB.amountPlaceHolder += amountRequest
 }
 
+func (pB *partnerBalance) increaseIndexLogRequestLatest() {
+	pB.indexLogRequestLatest += 1
+}
+
+func (pB *partnerBalance) decreaseIndexLogRequestLatest() error {
+	if pB.indexLogRequestLatest < 1 {
+		err := fmt.Sprintf("indexLogRequestLatest %d greater than zero when decrease", pB.indexLogRequestLatest)
+		return errors.New(err)
+	}
+
+	pB.indexLogRequestLatest -= 1
+	return nil
+}
+
 func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
 	if pB.balance < amountRequest {
 		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.balance, pB.partnerCode)
@@ -119,18 +144,48 @@ func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint64) error 
 // HandleOneRequestBalance is endpoint call check all process
 func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, error) {
 	pB.muLock.Lock()
+	defer pB.muLock.Unlock()
+
 	if pB.EStop.IsStop() {
 		return true, nil
 	}
 
+	if pB.isCommitBalance() {
+		pB.EStop.ThrowEmergencyStop()
+		defer pB.EStop.ResetEmergencyStop()
+
+		errCommitLIM := pB.commitPlaceHolderToLocalInMemory()
+		if errCommitLIM != nil {
+			return false, errCommitLIM
+		}
+
+		cm := commit_balance.CommitPlaceHolderToBalanceDB{
+			PartnerCode:            pB.partnerCode,
+			Balance:                pB.balance,
+			TotalAmountPlaceHolder: pB.amountPlaceHolder,
+			CnBalance:              pB.cnRechargeLog,
+		}
+
+		errCmDB := cm.Commit()
+		if errCmDB != nil {
+			errRB := pB.rollbackCommitPlaceHolderToLocalInMemory()
+			if errRB != nil {
+				errM := fmt.Sprintf(" commit place holder to DB error: %s , rollback commit placeholder local in memory err: %s", errCmDB.Error(), errRB.Error())
+				return false, errors.New(errM)
+			}
+
+			return false, errCmDB
+		}
+
+		return false, errors.New("balance is full, please try again")
+	}
+
 	if !pB.isValidAmount() {
-		pB.muLock.Unlock()
 		return false, errors.New("amount partner not valid")
 	}
 
 	approved, errA := pB.isApproveOrder(b)
 	if !approved {
-		pB.muLock.Unlock()
 		return false, errors.New(errA)
 	}
 
@@ -155,20 +210,65 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 		return false, errUDB
 	}
 
-	//release lock for performance
-	pB.muLock.Unlock()
-
 	return true, nil
 }
 
 func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b balancerRequest) {
 	// update local in memory
 	pB.increaseAmountPlaceHolder(b.amountRequest)
+	pB.increaseIndexLogRequestLatest()
+}
+
+func (pB *partnerBalance) commitPlaceHolderToLocalInMemory() error {
+	if pB.amountPlaceHolder <= 0 {
+		errM := fmt.Sprintf("balanceIncrement must is unsigned")
+		panic(errM)
+		os.Exit(0)
+	}
+
+	if pB.balance < pB.amountPlaceHolder {
+		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with partnerCode %s", pB.balance, pB.amountPlaceHolder, pB.partnerCode)
+		panic(errM)
+		os.Exit(0)
+	}
+
+	//update balance
+	pB.balance -= pB.amountPlaceHolder
+	return nil
+}
+
+func (pB *partnerBalance) rollbackCommitPlaceHolderToLocalInMemory() error {
+	if pB.amountPlaceHolder <= 0 {
+		errM := fmt.Sprintf("balanceIncrement must is unsigned")
+		panic(errM)
+		os.Exit(0)
+	}
+
+	if pB.balance < pB.amountPlaceHolder {
+		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with partnerCode %s", pB.balance, pB.amountPlaceHolder, pB.partnerCode)
+		panic(errM)
+		os.Exit(0)
+	}
+
+	//update balance
+	pB.balance += pB.amountPlaceHolder
+	return nil
 }
 
 func (pB *partnerBalance) revertTypeRequestPaymentLocalInMemory(b balancerRequest) error {
-	// update local in memory
-	return pB.decreaseAmountPlaceHolder(b.amountRequest)
+	// update balance
+	errAP := pB.decreaseAmountPlaceHolder(b.amountRequest)
+	if errAP != nil {
+		return errAP
+	}
+
+	//update latest index log
+	errILR := pB.decreaseIndexLogRequestLatest()
+	if errILR != nil {
+		return errILR
+	}
+
+	return nil
 }
 
 func (pB *partnerBalance) ValueObject() partnerBalance {

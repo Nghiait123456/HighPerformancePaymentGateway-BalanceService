@@ -6,6 +6,7 @@ import (
 )
 
 const valueStop = 1
+const valueNoStop = 0
 
 type (
 	emergencyStop struct {
@@ -31,6 +32,12 @@ func (e *emergencyStop) IsStop() bool {
 func (e *emergencyStop) ThrowEmergencyStop() {
 	e.mu.Lock()
 	e.stop = valueStop
+	e.mu.Unlock()
+}
+
+func (e *emergencyStop) ResetEmergencyStop() {
+	e.mu.Lock()
+	e.stop = valueNoStop
 	e.mu.Unlock()
 }
 

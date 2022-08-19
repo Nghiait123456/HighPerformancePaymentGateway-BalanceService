@@ -18,6 +18,7 @@ type (
 		muLock            sync.Mutex
 		lbShardBalanceLog shard_balance_logs.LBShardLogInterface
 		cnRechargeLog     sql.Connect
+		cnBalance         sql.Connect
 	}
 
 	allPartnerInterface interface {
@@ -35,16 +36,18 @@ type (
 
 func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) {
 	fake := make(map[string]partnerBalance)
+	//todo get indexLogRequestLatest from DB and update to
 	fake["partner_test"] = partnerBalance{
 		partnerCode:           "partner_test",
 		partnerName:           "TEST",
 		partnerIdentification: 1,
-		amountTotal:           1000000,
+		balance:               1000000,
 		amountPlaceHolder:     4,
 		status:                "active",
 		muLock:                sync.Mutex{},
 		lbShardBalanceLog:     allP.lbShardBalanceLog,
 		cnRechargeLog:         allP.cnRechargeLog,
+		cnBalance:             allP.cnBalance,
 	}
 
 	return fake, nil

@@ -2,14 +2,22 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"os"
 )
 
 type (
 	Balance struct {
 		BalanceOrm orm.Balance
 		BaseRepo   BaseInterface
+	}
+
+	CommitAmountPlaceHolder struct {
+		PartnerCode           string
+		AmountPlaceHolder     uint64
+		IndexLogRequestLatest uint64
 	}
 
 	BalanceInterface interface {
@@ -26,6 +34,7 @@ type (
 		UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error
 		UpdateBalanceByPartnerCode(partnerCode string, balance uint64) error
 		UpdateById(id uint32, update map[string]interface{}) error
+		CommitAmountPlaceHolderToBalance(c CommitAmountPlaceHolder) error
 	}
 )
 
@@ -94,6 +103,53 @@ func (rp *Balance) UpdateAllField(update orm.Balance) error {
 		return rs.Error
 	}
 
+	return nil
+}
+
+func (rp *Balance) CommitAmountPlaceHolderToBalance(c CommitAmountPlaceHolder) error {
+	var bl orm.Balance
+	rp.BaseRepo.UpdateContext()
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	if c.AmountPlaceHolder <= 0 {
+		errM := fmt.Sprintf("balanceIncrement must is unsigned")
+		panic(errM)
+		os.Exit(0)
+	}
+
+	rs := rp.DB().Where("partner_code = ?", c.PartnerCode).First(&bl)
+	if rs.Error != nil {
+		return rs.Error
+	}
+
+	if bl.ID == 0 {
+		errM := fmt.Sprintf("don't find balance with partnerCode %s", c.PartnerCode)
+		panic(errM)
+		os.Exit(0)
+	}
+
+	if bl.Balance < c.AmountPlaceHolder {
+		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with partnerCode %s", bl.Balance, c.AmountPlaceHolder, c.PartnerCode)
+		panic(errM)
+		os.Exit(0)
+	}
+
+	// calculator new balance
+	bl.Balance -= c.AmountPlaceHolder
+	// update index latest
+	bl.IndexLogRequestLatest = c.IndexLogRequestLatest
+
+	//commit
+	rp.DB().Begin()
+	rsU := rp.DB().Updates(&bl)
+	if rs.Error != nil {
+		rp.DB().Rollback()
+		return rsU.Error
+	}
+
+	rp.DB().Commit()
 	return nil
 }
 
