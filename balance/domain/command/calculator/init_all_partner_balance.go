@@ -3,8 +3,8 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"high-performance-payment-gateway/balance-service/balance/domain/command/logs_request_balance"
 	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/shard_balance_logs"
 	"sync"
 )
 
@@ -16,9 +16,9 @@ type (
 	allPartner struct {
 		allPartner        map[string]partnerBalance
 		muLock            sync.Mutex
-		lbShardBalanceLog shard_balance_logs.LBShardLogInterface
 		cnRechargeLog     sql.Connect
 		cnBalance         sql.Connect
+		logRequestBalance logs_request_balance.LogsInterface
 	}
 
 	allPartnerInterface interface {
@@ -45,9 +45,9 @@ func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) 
 		amountPlaceHolder:     4,
 		status:                "active",
 		muLock:                sync.Mutex{},
-		lbShardBalanceLog:     allP.lbShardBalanceLog,
 		cnRechargeLog:         allP.cnRechargeLog,
 		cnBalance:             allP.cnBalance,
+		logRequestBalance:     allP.logRequestBalance,
 	}
 
 	return fake, nil
