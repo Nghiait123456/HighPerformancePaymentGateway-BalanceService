@@ -38,3 +38,7 @@ func (q *QueueJob) AutoHandleRequest() {
 	}
 
 }
+
+func NewQueueJob() QueueJobInterface {
+	return &QueueJob{}
+}
