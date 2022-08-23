@@ -25,7 +25,7 @@ type (
 	LogsInterface interface {
 		Init()
 		Push(o OrderLog)
-		saveLogsToServiceSave() error
+		saveLogs() error
 		sendLogsToServiceSave(s *SendLogsToOtherService) error
 	}
 
@@ -47,7 +47,7 @@ func (l *Logs) Init(o OrderLog) {
 	l.maxNumberMustSaveLog = MAXIMUM_LOG_MUST_SAVE_LOG_TO_OTHER_SERVICE
 	l.maxRangeTimeAllowTwoTimesUpdate = MAX_DISTANCE_TIME_FOR_TWO_TIMES_UPDATE
 	go func() {
-		l.saveLogsToServiceSave()
+		l.saveLogs()
 	}()
 }
 
@@ -55,7 +55,7 @@ func (l *Logs) Push(o OrderLog) {
 	l.allLog <- o
 }
 
-func (l *Logs) saveLogsToServiceSave() error {
+func (l *Logs) saveLogs() error {
 	var logs []OrderLog
 	timeout := time.After(time.Duration(l.maxRangeTimeAllowTwoTimesUpdate) * time.Millisecond)
 
