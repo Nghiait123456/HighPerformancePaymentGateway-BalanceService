@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"time"
 )
 

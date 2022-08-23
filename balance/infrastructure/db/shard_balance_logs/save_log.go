@@ -1,8 +1,8 @@
 package shard_balance_logs
 
 import (
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
 )
 
 type (

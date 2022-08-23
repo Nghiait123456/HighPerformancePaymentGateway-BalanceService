@@ -2,42 +2,21 @@ package main
 
 import (
 	"fmt"
-	"sync"
-	"time"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
 )
 
 func main() {
-	c := make(chan string)
-	var totalRead uint64
-	var totalWrite uint64
-	var wg sync.WaitGroup
-	maxMessage := uint64(50000000)
+	err := godotenv.Load("balance/infrastructure/config/env/.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-	startTime := time.Now().Unix()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := uint64(0); i < maxMessage; i++ {
-			c <- "foo"
-			totalWrite++
-		}
-		fmt.Println(fmt.Sprintf("write Done, totalWrite %d", totalWrite))
-	}()
+	s3Bucket := os.Getenv("S3_BUCKET")
+	secretKey := os.Getenv("SECRET_KEY")
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			<-c
-			totalRead++
-			if totalRead == maxMessage {
-				return
-			}
-		}
-	}()
+	fmt.Println(s3Bucket, secretKey)
 
-	wg.Wait()
-	endTime := time.Now().Unix()
-	fmt.Println(fmt.Sprintf("done total Read %d, startTime %d, endTime %d", totalRead, startTime, endTime))
-
+	// now do something with s3 or whatever
 }

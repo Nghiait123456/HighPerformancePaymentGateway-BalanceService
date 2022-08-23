@@ -1,7 +1,7 @@
 package repository_other_service
 
 import (
-	"high-performance-payment-gateway/balance-service/balance/entity"
+	"github.com/high-performance-payment-gateway/balance-service/balance/entity"
 )
 
 type Partner struct {

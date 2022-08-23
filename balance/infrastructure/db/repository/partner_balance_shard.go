@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"high-performance-payment-gateway/balance-service/balance/entity"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"github.com/high-performance-payment-gateway/balance-service/balance/entity"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 )
 
 type (

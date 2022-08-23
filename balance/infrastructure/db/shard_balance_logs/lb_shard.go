@@ -2,8 +2,8 @@ package shard_balance_logs
 
 import (
 	"fmt"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository_other_service"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository_other_service"
 	"math"
 	"os"
 	"sync/atomic"

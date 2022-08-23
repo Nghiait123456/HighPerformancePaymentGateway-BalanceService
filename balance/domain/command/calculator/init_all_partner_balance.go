@@ -3,8 +3,8 @@ package calculator
 import (
 	"errors"
 	"fmt"
-	"high-performance-payment-gateway/balance-service/balance/domain/command/logs_request_balance"
-	"high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
+	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/logs_request_balance"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"sync"
 )
 

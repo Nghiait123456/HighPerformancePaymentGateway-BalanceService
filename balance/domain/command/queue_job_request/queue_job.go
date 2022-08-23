@@ -1,6 +1,6 @@
 package queue_job_request
 
-import "high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
+import "github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
 
 type (
 	OneRequest = calculator.BalancerRequest

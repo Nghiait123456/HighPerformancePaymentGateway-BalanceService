@@ -1,6 +1,6 @@
 package entity
 
-import "high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+import "github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 
 type PartnerBalanceShards []orm.PartnerBalanceShard
 
