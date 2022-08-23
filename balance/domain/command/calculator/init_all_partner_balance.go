@@ -13,7 +13,7 @@ all information partner for calculator balance
 */
 
 type (
-	allPartner struct {
+	AllPartner struct {
 		allPartner        map[string]partnerBalance
 		muLock            sync.Mutex
 		cnRechargeLog     sql.Connect
@@ -21,7 +21,7 @@ type (
 		logRequestBalance logs_request_balance.LogsInterface
 	}
 
-	allPartnerInterface interface {
+	AllPartnerInterface interface {
 		initPartnersInterface
 	}
 
@@ -34,7 +34,7 @@ type (
 	}
 )
 
-func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) {
+func (allP *AllPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) {
 	fake := make(map[string]partnerBalance)
 	//todo get indexLogRequestLatest from DB and update to
 	fake["partner_test"] = partnerBalance{
@@ -53,7 +53,7 @@ func (allP *allPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) 
 	return fake, nil
 }
 
-func (allP *allPartner) InitAllPartnerInfo() error {
+func (allP *AllPartner) InitAllPartnerInfo() error {
 	allPartner, err := allP.LoadAllPartnerInfo()
 	if err != nil {
 		return err
@@ -62,12 +62,12 @@ func (allP *allPartner) InitAllPartnerInfo() error {
 	balancePlaceHolderHistory := NewBalancePlaceHolderHistory()
 
 	allP.muLock.Lock()
-	//init raw allPartner
+	//init raw AllPartner
 	for k, v := range allPartner {
 		allP.allPartner[k] = v
 	}
 
-	//merger balancePlaceHolderHistory to allPartner
+	//merger balancePlaceHolderHistory to AllPartner
 	for k, v := range allP.allPartner {
 		placeHolder, ok := balancePlaceHolderHistory.GetAllPlaceHolder()[k]
 		if ok {
@@ -83,18 +83,18 @@ func (allP *allPartner) InitAllPartnerInfo() error {
 	return nil
 }
 
-func (allP *allPartner) UpdateOnePartner(p partnerBalance) error {
+func (allP *AllPartner) UpdateOnePartner(p partnerBalance) error {
 	p.muLock.Lock()
 	key := allP.getKeyOnePartner(p)
 	allP.allPartner[key] = p
 	return nil
 }
 
-func (allP *allPartner) getKeyOnePartner(p partnerBalance) string {
+func (allP *AllPartner) getKeyOnePartner(p partnerBalance) string {
 	return p.partnerCode
 }
 
-func (allP *allPartner) GetOnePartner(partnerCode string) (partnerBalance, error) {
+func (allP *AllPartner) GetOnePartner(partnerCode string) (partnerBalance, error) {
 	partner, ok := allP.allPartner[partnerCode]
 	if !ok {
 		err := fmt.Sprintf("partnercode %s not exists", partnerCode)
@@ -104,8 +104,8 @@ func (allP *allPartner) GetOnePartner(partnerCode string) (partnerBalance, error
 	return partner, nil
 }
 
-func InitAllPartnerData() allPartnerInterface {
-	allPartner := allPartner{}
+func InitAllPartnerData() AllPartnerInterface {
+	allPartner := AllPartner{}
 	err := allPartner.InitAllPartnerInfo()
 	if err != nil {
 		panic("Init all partner error: " + err.Error())

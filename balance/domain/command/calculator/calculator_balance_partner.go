@@ -13,9 +13,9 @@ import (
 )
 
 type (
-	balancerRequest struct {
-		amountRequest         uint64
-		partnerCode           string
+	BalancerRequest struct {
+		AmountRequest         uint64
+		PartnerCode           string
 		partnerIdentification uint
 		orderID               uint64
 		// create order, update amount when partner recharge
@@ -39,7 +39,7 @@ type (
 	}
 
 	saveLogsDB struct {
-		b  balancerRequest
+		b  BalancerRequest
 		pb partnerBalance
 		//lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
 		//saveLogRequestBalance shard_balance_logs.SaveLogRequestBalanceInterface
@@ -51,17 +51,17 @@ type (
 	calculatorPartnerBalancerInterface interface {
 		isValidAmount() bool
 		isFull() bool
-		isApproveOrder(b balancerRequest) (bool, string)
+		isApproveOrder(b BalancerRequest) (bool, string)
 		increaseAmount(amountRequest uint64)
 		increaseAmountPlaceHolder(amountRequest uint64)
 		decreaseAmount(amountRequest uint64) error
 		decreaseAmountPlaceHolder(amountRequest uint64) error
 		increaseIndexLogRequestLatest()
-		HandleOneRequestBalance(b balancerRequest) (bool, error)
+		HandleOneRequestBalance(b BalancerRequest) (bool, error)
 		commitPlaceHolderToLocalInMemory() error
 		rollbackCommitPlaceHolderToLocalInMemory() error
-		updateRequestApprovedLocalInMemory(b balancerRequest)
-		revertRequestApprovedLocalInMemory(b balancerRequest) error
+		updateRequestApprovedLocalInMemory(b BalancerRequest)
+		revertRequestApprovedLocalInMemory(b BalancerRequest) error
 		saveLogsPlaceHolder(s saveLogsDB) (bool, error)
 		saveRequestApprovedDB(s saveLogsDB) (bool, error)
 		saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error)
@@ -81,10 +81,10 @@ func (pB *partnerBalance) isValidAmount() bool {
 	return pB.balance >= 0 && pB.amountPlaceHolder >= 0 && pB.balance > pB.amountPlaceHolder
 }
 
-func (pB *partnerBalance) isApproveOrder(b balancerRequest) (bool, string) {
+func (pB *partnerBalance) isApproveOrder(b BalancerRequest) (bool, string) {
 	switch b.typeRequest {
 	case typeRequestPayment:
-		if b.amountRequest+pB.amountPlaceHolder <= pB.balance {
+		if b.AmountRequest+pB.amountPlaceHolder <= pB.balance {
 			return true, ""
 		}
 		return false, "not enough money"
@@ -123,7 +123,7 @@ func (pB *partnerBalance) decreaseIndexLogRequestLatest() error {
 
 func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
 	if pB.balance < amountRequest {
-		err := fmt.Sprintf("amountRequest %i greater than amountTatal %i in partnerCode %s", amountRequest, pB.balance, pB.partnerCode)
+		err := fmt.Sprintf("AmountRequest %i greater than amountTatal %i in PartnerCode %s", amountRequest, pB.balance, pB.partnerCode)
 		return errors.New(err)
 	}
 
@@ -133,7 +133,7 @@ func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
 
 func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint64) error {
 	if pB.amountPlaceHolder < amountRequest {
-		err := fmt.Sprintf("amountRequest %i greater than amountPlaceHolder %i in partnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
+		err := fmt.Sprintf("AmountRequest %i greater than amountPlaceHolder %i in PartnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
 		return errors.New(err)
 	}
 
@@ -142,12 +142,12 @@ func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint64) error 
 }
 
 // HandleOneRequestBalance is endpoint call check all process
-func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, error) {
+func (pB *partnerBalance) HandleOneRequestBalance(b BalancerRequest) (bool, error) {
 	pB.muLock.Lock()
 	defer pB.muLock.Unlock()
 
 	if pB.EStop.IsStop() {
-		return true, nil
+		return false, errors.New("partner is stopping")
 	}
 
 	if pB.isFull() {
@@ -185,9 +185,9 @@ func (pB *partnerBalance) HandleOneRequestBalance(b balancerRequest) (bool, erro
 	return true, nil
 }
 
-func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b balancerRequest) {
+func (pB *partnerBalance) updateTypeRequestPaymentLocalInMemory(b BalancerRequest) {
 	// update local in memory
-	pB.increaseAmountPlaceHolder(b.amountRequest)
+	pB.increaseAmountPlaceHolder(b.AmountRequest)
 	pB.increaseIndexLogRequestLatest()
 }
 
@@ -199,7 +199,7 @@ func (pB *partnerBalance) commitPlaceHolderToLocalInMemory() error {
 	}
 
 	if pB.balance < pB.amountPlaceHolder {
-		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with partnerCode %s", pB.balance, pB.amountPlaceHolder, pB.partnerCode)
+		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with PartnerCode %s", pB.balance, pB.amountPlaceHolder, pB.partnerCode)
 		panic(errM)
 		os.Exit(0)
 	}
@@ -217,7 +217,7 @@ func (pB *partnerBalance) rollbackCommitPlaceHolderToLocalInMemory() error {
 	}
 
 	if pB.balance < pB.amountPlaceHolder {
-		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with partnerCode %s", pB.balance, pB.amountPlaceHolder, pB.partnerCode)
+		errM := fmt.Sprintf("balance %d greater amountPlaceHolder %d with PartnerCode %s", pB.balance, pB.amountPlaceHolder, pB.partnerCode)
 		panic(errM)
 		os.Exit(0)
 	}
@@ -227,9 +227,9 @@ func (pB *partnerBalance) rollbackCommitPlaceHolderToLocalInMemory() error {
 	return nil
 }
 
-func (pB *partnerBalance) revertTypeRequestPaymentLocalInMemory(b balancerRequest) error {
+func (pB *partnerBalance) revertTypeRequestPaymentLocalInMemory(b BalancerRequest) error {
 	// update balance
-	errAP := pB.decreaseAmountPlaceHolder(b.amountRequest)
+	errAP := pB.decreaseAmountPlaceHolder(b.AmountRequest)
 	if errAP != nil {
 		return errAP
 	}
@@ -260,14 +260,14 @@ func (pB *partnerBalance) saveTypeRequestPaymentDB(s saveLogsDB) (bool, error) {
 	return status, err
 }
 
-func (pB *partnerBalance) updateTypeRequestRechargeLocalInMemory(b balancerRequest) {
+func (pB *partnerBalance) updateTypeRequestRechargeLocalInMemory(b BalancerRequest) {
 	// update local in memory
-	pB.increaseAmount(b.amountRequest)
+	pB.increaseAmount(b.AmountRequest)
 }
 
-func (pB *partnerBalance) revertTypeRequestRechargeLocalInMemory(b balancerRequest) error {
+func (pB *partnerBalance) revertTypeRequestRechargeLocalInMemory(b BalancerRequest) error {
 	// update local in memory
-	return pB.decreaseAmount(b.amountRequest)
+	return pB.decreaseAmount(b.AmountRequest)
 }
 
 func (pB *partnerBalance) saveTypeRequestRechargeDB(s saveLogsDB) (bool, error) {
@@ -276,7 +276,7 @@ func (pB *partnerBalance) saveTypeRequestRechargeDB(s saveLogsDB) (bool, error) 
 	return status, err
 }
 
-func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b balancerRequest) {
+func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b BalancerRequest) {
 	switch b.typeRequest {
 	case typeRequestPayment:
 		pB.updateTypeRequestPaymentLocalInMemory(b)
@@ -289,7 +289,7 @@ func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b balancerRequest) 
 	}
 }
 
-func (pB *partnerBalance) revertRequestApprovedLocalInMemory(b balancerRequest) error {
+func (pB *partnerBalance) revertRequestApprovedLocalInMemory(b BalancerRequest) error {
 	switch b.typeRequest {
 	case typeRequestPayment:
 		return pB.revertTypeRequestPaymentLocalInMemory(b)
@@ -318,8 +318,8 @@ func (pB *partnerBalance) saveRequestApprovedDB(s saveLogsDB) (bool, error) {
 func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
 	//var brl orm.BalanceRequestLog
 	//brl.OrderId = s.b.orderID
-	//brl.PartnerCode = s.b.partnerCode
-	//brl.AmountRequest = s.b.amountRequest
+	//brl.PartnerCode = s.b.PartnerCode
+	//brl.AmountRequest = s.b.AmountRequest
 	//brl.AmountPlaceHolder = s.pb.amountPlaceHolder
 	//brl.Balance = s.pb.balance
 	//brl.Status = orm.BalanceRequestLog{}.StatusProcessing()
@@ -333,7 +333,7 @@ func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
 
 	o := logs_request_balance.OrderLog{
 		OrderId: s.b.orderID,
-		Amount:  s.b.amountRequest,
+		Amount:  s.b.AmountRequest,
 		Status:  "processing",
 	}
 
@@ -349,8 +349,8 @@ func (pB *partnerBalance) saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error
 
 	// BalanceRechargeLog
 	brl.OrderId = s.b.orderID
-	brl.PartnerCode = s.b.partnerCode
-	brl.AmountRecharge = s.b.amountRequest
+	brl.PartnerCode = s.b.PartnerCode
+	brl.AmountRecharge = s.b.AmountRequest
 	brl.Balance = s.pb.balance
 	brl.Status = orm.BalanceRechargeLog{}.StatusSuccess()
 	brl.CreatedAt = uint32(time.Now().Unix())
