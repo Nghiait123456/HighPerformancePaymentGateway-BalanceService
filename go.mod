@@ -3,9 +3,11 @@ module github.com/high-performance-payment-gateway/balance-service
 go 1.18
 
 require (
+	github.com/aws/aws-sdk-go v1.44.82 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect

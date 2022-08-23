@@ -77,6 +77,7 @@ func (g *GlobalConfig) LoadConfig() error {
 
 	switch evm {
 	case ENV_LOCAL:
+		g.LoadEnvLocal()
 
 	}
 }
@@ -91,13 +92,13 @@ func (g *GlobalConfig) LoadEnvLocal() error {
 }
 
 func (g *GlobalConfig) LoadEnvDev() error {
-
+	return nil
 }
 
 func (g *GlobalConfig) LoadEnvStaging() error {
-
+	return nil
 }
 
 func (g *GlobalConfig) LoadEnvProduct() error {
-
+	return nil
 }
