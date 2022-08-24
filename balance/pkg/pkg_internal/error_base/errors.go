@@ -5,8 +5,9 @@ import "fmt"
 type (
 	// A BaseError wraps the Code and message which defines an error.
 	ErrorBase struct {
-		Code    int
-		Message string
+		Code      int
+		Message   string
+		Signature string // use detect type error
 	}
 
 	//One Error Custom matching error default golang
@@ -15,6 +16,7 @@ type (
 		error
 		GetCode() int
 		GetMessage() string
+		GetSignature() string
 	}
 )
 
@@ -24,6 +26,10 @@ func (b *ErrorBase) GetCode() int {
 
 func (b *ErrorBase) GetMessage() string {
 	return b.Message
+}
+
+func (b *ErrorBase) GetSignature() string {
+	return b.Signature
 }
 
 func newBaseError(code int, message string) *ErrorBase {

@@ -28,10 +28,14 @@ func parseTime(layout, value string) *time.Time {
 }
 
 func main() {
+
 	err := testError()
 	if err != nil {
 		if error_base.IsErrorBase(err) {
 			errB := error_base.GetErrorBase(err)
+			if error_http.IsErrorHttpInternal(errB) {
+				fmt.Println("is instance of error internal")
+			}
 			//todo handle Error Code Custom
 			//switch errB.Code() {
 			//case :
