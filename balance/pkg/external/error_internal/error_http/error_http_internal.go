@@ -1,6 +1,6 @@
 package error_http
 
-import "github.com/high-performance-payment-gateway/balance-service/balance/pkg/pkg_internal/error_base"
+import "github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_base"
 
 type (
 	ErrorInternal     = error_base.Error

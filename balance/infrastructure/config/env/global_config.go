@@ -41,6 +41,10 @@ const (
 	ENV_STAGING     = "staging"
 	ENV_PRODUCT     = "product"
 	ENV_ENVIRONMENT = "ENVIRONMENT_BALANCE_SERVICE"
+
+	AWS_SECRET_NAME   = "AWS_SECRET_NAME"
+	AWS_REGION        = "AWS_REGION"
+	AWS_VERSION_STATE = "AWS_VERSION_STATE"
 )
 
 func (g GlobalConfig) AllEnvironment() []string {
@@ -92,7 +96,39 @@ func (g *GlobalConfig) LoadEnvLocal() error {
 }
 
 func (g *GlobalConfig) LoadEnvDev() error {
-	return nil
+	// never save secret to file, always get from api other service
+	aws := NewAwsManagerSecret()
+
+	// init
+	secretName := os.Getenv(AWS_SECRET_NAME)
+	if secretName == "" {
+		panic("don't exits AWS_SECRET_NAME in dev")
+		os.Exit(0)
+	}
+
+	region := os.Getenv(AWS_REGION)
+	if region == "" {
+		panic("don't exits AWS_REGION in dev")
+		os.Exit(0)
+	}
+
+	versionState := os.Getenv(AWS_VERSION_STATE)
+	if versionState == "" {
+		panic("don't exits AWS_REGION in dev")
+		os.Exit(0)
+	}
+
+	aws.Init(secretName, region, versionState)
+
+	//get
+	secretV, err := aws.GetSecret()
+	if err != nil {
+		panic(fmt.Sprintf("get secret from aws manager secret in dev error, %s", err.Error()))
+		os.Exit(0)
+	}
+
+	// todo mapping secret to struct
+
 }
 
 func (g *GlobalConfig) LoadEnvStaging() error {
