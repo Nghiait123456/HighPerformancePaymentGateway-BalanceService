@@ -1,25 +1,18 @@
-// Use this code snippet in your app.
-// If you need more information about configurations or implementing the sample code, visit the AWS docs:
-// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/setting-up.html
-package main
+package env
 
-import (
-	"fmt"
-	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
-)
+import "fmt"
 
-func main() {
-	UpdateAndGetSecret()
-}
-
-func UpdateAndGetSecret() {
+/*
+ example update and get secret
+*/
+func updateAndGetSecret() {
 	secretName := "payment-balance-service-qwedjfndasndajndn12"
 	region := "ap-southeast-1"
 	versionState := ""
 
 	update := `{"TEST1":"ssssssssssss3333333333333"}`
 
-	awsS := env.NewAwsManagerSecret()
+	awsS := NewAwsManagerSecret()
 	awsS.Init(secretName, region, versionState)
 	errU := awsS.UpdateSecretString(update)
 	if errU != nil {

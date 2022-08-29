@@ -2,11 +2,12 @@ package env
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
+	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 type (
@@ -19,20 +20,40 @@ type (
 	AwsMangerSecretInterface interface {
 		Init(secretName string, region string, versionState string)
 		GetSecret() (string, error) // json string
+		UpdateSecretString(update string) error
+		IsErrorCustomOfAws(e error) bool
+		ConvertToErrorAws(e error) awserr.Error
 	}
 )
 
+const (
+	DEFAULT_AWS_SERVSION_STATTE = "AWSCURRENT"
+)
+
 func (a *AwsMangerSecret) Init(secretName string, region string, versionState string) {
+	if secretName == "" {
+		panic("secretName must not empty")
+		os.Exit(0)
+	}
+
+	if region == "" {
+		panic("region must not empty")
+		os.Exit(0)
+	}
+
+	if versionState == "" {
+		versionState = DEFAULT_AWS_SERVSION_STATTE
+	}
+
 	a.SecretName = secretName
 	a.Region = region
 	a.VersionState = versionState
 }
 
 func (a AwsMangerSecret) GetSecret() (string, error) {
-	sess, err := session.NewSession()
-	if err != nil {
-		fmt.Println(err.Error())
-		return "", err
+	sess, errNS := session.NewSession()
+	if errNS != nil {
+		return "", errNS
 	}
 
 	svc := secretsmanager.New(sess,
@@ -42,43 +63,21 @@ func (a AwsMangerSecret) GetSecret() (string, error) {
 		VersionStage: aws.String(a.VersionState),
 	}
 
-	// In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
-	// See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+	result, errG := svc.GetSecretValue(input)
+	if errG != nil {
+		if aerr, ok := errG.(awserr.Error); ok {
+			log.WithFields(log.Fields{
+				"errCode":    aerr.Code(),
+				"errMessage": aerr.Message(),
+			}).Error("Update secret error")
 
-	result, err := svc.GetSecretValue(input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
 			return "", aerr
-			switch aerr.Code() {
-			case secretsmanager.ErrCodeDecryptionFailure:
-				// Secrets Manager can't decrypt the protected secret text using the provided KMS key.
-				//todo log error
-				return "", aerr
-
-			case secretsmanager.ErrCodeInternalServiceError:
-				// An error occurred on the server side.
-				//todo log error
-				return "", aerr
-
-			case secretsmanager.ErrCodeInvalidParameterException:
-				// You provided an invalid value for a parameter.
-				//todo log error
-				return "", aerr
-
-			case secretsmanager.ErrCodeInvalidRequestException:
-				// You provided a parameter value that is not valid for the current state of the resource.
-				//todo log error
-				return "", aerr
-
-			case secretsmanager.ErrCodeResourceNotFoundException:
-				// We can't find the resource that you asked for.
-				//todo log error
-				return "", aerr
-			}
 		} else {
-			fmt.Println(err.Error())
-			//todo log error
-			return "", aerr
+			log.WithFields(log.Fields{
+				"errMessage": errG.Error(),
+			}).Error("Update secret error")
+
+			return "", errG
 		}
 	}
 
@@ -86,21 +85,62 @@ func (a AwsMangerSecret) GetSecret() (string, error) {
 	// Depending on whether the secret is a string or binary, one of these fields will be populated.
 	if result.SecretString != nil {
 		secretString := *result.SecretString
-		fmt.Println(fmt.Sprintf("secret string %s", secretString))
 		return secretString, nil
 	} else {
 		decodedBinarySecretBytes := make([]byte, base64.StdEncoding.DecodedLen(len(result.SecretBinary)))
 		len, err := base64.StdEncoding.Decode(decodedBinarySecretBytes, result.SecretBinary)
 		if err != nil {
-			fmt.Println("Base64 Decode Error:", err)
-			//todo log error
 			return "", err
 		}
 
 		decodedBinarySecret := string(decodedBinarySecretBytes[:len])
-		fmt.Println(fmt.Sprintf("decodedBinarySecretg %s", decodedBinarySecret))
 		return decodedBinarySecret, nil
 	}
+}
+
+// update is json string
+func (a AwsMangerSecret) UpdateSecretString(update string) error {
+	sess, errNS := session.NewSession()
+	if errNS != nil {
+		return errNS
+	}
+
+	svc := secretsmanager.New(sess,
+		aws.NewConfig().WithRegion(a.Region))
+	input := &secretsmanager.UpdateSecretInput{
+		SecretId:     aws.String(a.SecretName),
+		SecretString: aws.String(update),
+	}
+
+	_, errUpdate := svc.UpdateSecret(input)
+	if errUpdate != nil {
+		if aerr, ok := errUpdate.(awserr.Error); ok {
+			log.WithFields(log.Fields{
+				"errCode":    aerr.Code(),
+				"errMessage": aerr.Message(),
+			}).Error("Update secret error")
+		} else {
+			log.WithFields(log.Fields{
+				"errMessage": errUpdate.Error(),
+			}).Error("Update secret error")
+		}
+
+		return errUpdate
+	}
+
+	return nil
+}
+
+func (a AwsMangerSecret) IsErrorCustomOfAws(e error) bool {
+	if _, ok := e.(awserr.Error); ok {
+		return true
+	}
+
+	return false
+}
+
+func (a AwsMangerSecret) ConvertToErrorAws(e error) awserr.Error {
+	return e.(awserr.Error)
 }
 
 func NewAwsManagerSecret() AwsMangerSecretInterface {

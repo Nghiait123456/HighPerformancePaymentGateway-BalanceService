@@ -84,6 +84,8 @@ func (g *GlobalConfig) LoadConfig() error {
 		g.LoadEnvLocal()
 
 	}
+
+	return nil
 }
 
 func (g *GlobalConfig) LoadEnvLocal() error {
@@ -121,13 +123,15 @@ func (g *GlobalConfig) LoadEnvDev() error {
 	aws.Init(secretName, region, versionState)
 
 	//get
-	secretV, err := aws.GetSecret()
-	if err != nil {
-		panic(fmt.Sprintf("get secret from aws manager secret in dev error, %s", err.Error()))
-		os.Exit(0)
-	}
+	//secretV, err := aws.GetSecret()
+	//if err != nil {
+	//	panic(fmt.Sprintf("get secret from aws manager secret in dev error, %s", err.Error()))
+	//	os.Exit(0)
+	//}
 
 	// todo mapping secret to struct
+
+	return nil
 
 }
 

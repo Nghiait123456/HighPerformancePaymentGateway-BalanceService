@@ -2,11 +2,12 @@ module github.com/high-performance-payment-gateway/balance-service
 
 go 1.18
 
+require github.com/sirupsen/logrus v1.9.0
 
 require (
-	github.com/sirupsen/logrus v1.9.0
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/aws/aws-sdk-go v1.44.82 // indirect
+	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gofiber/fiber/v2 v2.36.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
