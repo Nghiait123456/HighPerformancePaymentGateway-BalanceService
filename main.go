@@ -6,10 +6,48 @@ package main
 import (
 	"fmt"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
+	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/auth/auth_internal_service"
+	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
+	"os"
+	"time"
 )
 
 func main() {
-	UpdateAndGetSecret()
+	log_init.Init(log_init.Log{
+		TypeFormat: log_init.TYPE_FORMAT_TEXT,
+		TypeOutput: log_init.TYPE_OUTPUT_FILE,
+		LinkFile:   "balance/infrastructure/log/log_file/log.log",
+	})
+
+	TestAuthServiceInternal()
+
+	time.Sleep(1000 * time.Second)
+
+}
+
+func TestAuthServiceInternal() {
+	os.Setenv(auth_internal_service.SECRET_NAME_KEY, "payment-balance-service-qwedjfndasndajndn12")
+	os.Setenv(auth_internal_service.REGION_KEY, "ap-southeast-1")
+	os.Setenv(auth_internal_service.VERSION_STATE_KEY, "")
+	os.Setenv(auth_internal_service.IS_USE_AUTH_INTERNAL_KEY, auth_internal_service.IS_USE_AUTH_INTERNAL_VALUE)
+	os.Setenv(auth_internal_service.IS_AUTO_CHANGE_SECRET_REMOTE_KEY, auth_internal_service.IS_AUTO_CHANGE_SECRET_REMOTE_VALUE)
+
+	//auto := auth_internal_service.NewAutoChangeSecret()
+	//auto.Init()
+
+	//first time contruct
+	//rs := auth_internal_service.FirstTimeContructSecret()
+	//if rs != nil {
+	//	panic("construct secret in first time error")
+	//	os.Exit(0)
+	//}
+	//fmt.Printf("init first time contruct success")
+
+	//authIS := auth_internal_service.NewAuthInternalService()
+	//authIS.InitAuth()
+	//rs, err := authIS.Auth("x8kx3QFk9uxwMBFFT1zS00000000000000000008")
+	//fmt.Printf("rs = %v, err = %v", rs, err)
+
 }
 
 func UpdateAndGetSecret() {

@@ -19,8 +19,8 @@ type (
 
 	AwsMangerSecretInterface interface {
 		Init(secretName string, region string, versionState string)
-		GetSecret() (string, error) // json string
-		UpdateSecretString(update string) error
+		GetSecret() (string, error)             // json string
+		UpdateSecretString(update string) error // update secret type json string : { key : value, ...}
 		IsErrorCustomOfAws(e error) bool
 		ConvertToErrorAws(e error) awserr.Error
 	}
