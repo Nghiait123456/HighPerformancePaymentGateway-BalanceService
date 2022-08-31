@@ -64,7 +64,7 @@ func Init(l Log) {
 /**
    example :
 
-   log_init.InitAuth(log_init.Log{
+   log_init.Init(log_init.Log{
 		TypeFormat: log_init.TYPE_FORMAT_TEXT,
 		TypeOutput: log_init.TYPE_OUTPUT_FILE,
 		LinkFile:   "balance/infrastructure/log/log_file/log.log",

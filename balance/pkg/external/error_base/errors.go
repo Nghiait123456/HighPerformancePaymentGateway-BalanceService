@@ -47,7 +47,7 @@ func (b *ErrorBase) Error() string {
 }
 
 func SprintError(code int, message string) string {
-	msg := fmt.Sprintf("error Code %d: error Message %s", code, message)
+	msg := fmt.Sprintf("error Code: %d , error Message:  %s", code, message)
 	return msg
 }
 

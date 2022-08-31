@@ -27,6 +27,7 @@ type (
 		versionCurrent    uint64
 		versionNearestOld uint64
 		timeUpdateSecret  uint64 // ms
+		env               env.AuthInternalServiceConfigInterface
 	}
 
 	AuthResponse struct {
@@ -43,30 +44,23 @@ type (
 	}
 
 	AuthInternalServiceInterface interface {
-		/*
-		  list fc for auth
-		*/
 		Auth(secretCheck string) (bool, AuthResponse) // auth to incoming request
-		InitAuth() error
+		Init() error
 		autoUpdateSecretInLocal()
-		UpdateSecretInLocal() error
+		updateSecretInLocal() error
+		TryUpdateSecretInLocal(numberTry uint) error
 		getSecretFrRemote() (AllSecret, error)
 		checkAllConfigEnvBeforeRun() error
-		ListEnvRequireSetupBeforeRunPacket() []string
 	}
 )
 
 const (
-	LENGTH_SECRET_STRING       = 40
-	LENGTH_VERSION_STRING      = 20
-	LENGTH_BODY_STRING         = 20
-	TIME_UPDATE_SECRET_DEFAULT = 10000 //ms
+	LENGTH_SECRET_STRING              = 40
+	LENGTH_VERSION_STRING             = 20
+	LENGTH_BODY_STRING                = 20
+	TIME_UPDATE_SECRET_DEFAULT        = 10000 //ms
+	NUMBER_TRY_UPDATE_SECRET_IN_LOCAL = 20
 
-	//all value map key of secret require pass when init data
-	SECRET_NAME_KEY                = "AUTH_INTERNAL_SECRET_NAME"
-	REGION_KEY                     = "AUTH_INTERNAL_VERSION"
-	VERSION_STATE_KEY              = "AUTH_INTERNAL_VERSION_STATE"
-	IS_USE_AUTH_INTERNAL_KEY       = "IS_USE_AUTH_INTERNAL_KEY"
 	IS_USE_AUTH_INTERNAL_VALUE     = "true"
 	IS_NOT_USE_AUTH_INTERNAL_VALUE = "false"
 )
@@ -98,12 +92,13 @@ func (a *AuthInternalService) Auth(secretCheck string) (bool, AuthResponse) {
 
 	// if have new version, update secret and check again
 	if vSecretCheck > a.versionCurrent {
-		err := a.UpdateSecretInLocal()
+		err := a.TryUpdateSecretInLocal(NUMBER_TRY_UPDATE_SECRET_IN_LOCAL)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"errMessage": err.Error(),
-			}).Error("Update secret error")
-			return defaultErrorWhyNotClearReason()
+			}).Error("TryUpdateSecretInLocal secret error")
+			panic(fmt.Sprintf("TryUpdateSecretInLocal: %s", err.Error()))
+			os.Exit(0)
 		}
 
 		if vSecretCheck != a.versionCurrent {
@@ -175,21 +170,20 @@ func (a AuthInternalService) getVersionFrSecret(secret string) (uint64, error) {
 }
 
 func (a AuthInternalService) checkAllConfigEnvBeforeRun() error {
-	if os.Getenv(SECRET_NAME_KEY) == "" {
-		return errors.New(fmt.Sprintf("missing config env key %s", SECRET_NAME_KEY))
+	if a.env.SecretName() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_SECRET_NAME_KEY))
 	}
 
-	if os.Getenv(REGION_KEY) == "" {
-		return errors.New(fmt.Sprintf("missing config env key %s", REGION_KEY))
+	if a.env.Region() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_REGION_KEY))
 	}
 
-	_, e := os.LookupEnv(VERSION_STATE_KEY)
-	if e != true {
-		return errors.New(fmt.Sprintf("missing config env key %s", VERSION_STATE_KEY))
+	if a.env.VersionState() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_VERSION_STATE_KEY))
 	}
 
-	if os.Getenv(IS_USE_AUTH_INTERNAL_KEY) == "" {
-		return errors.New(fmt.Sprintf("missing config env key %s", IS_USE_AUTH_INTERNAL_KEY))
+	if a.env.IsUseAuthInternal() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_IS_USE_AUTH_INTERNAL_KEY))
 	}
 
 	return nil
@@ -198,33 +192,7 @@ func (a AuthInternalService) checkAllConfigEnvBeforeRun() error {
 func (a *AuthInternalService) getSecretFrRemote() (AllSecret, error) {
 	allS := AllSecret{}
 	sAws := env.NewAwsManagerSecret()
-	secretName := os.Getenv(SECRET_NAME_KEY)
-	if secretName == "" {
-		log.WithFields(log.Fields{
-			"secretName": "",
-		}).Error("Secret name is empty")
-		panic("Secret name of server auth internal is empty")
-		os.Exit(0)
-	}
-
-	region := os.Getenv(REGION_KEY)
-	if region == "" {
-		log.WithFields(log.Fields{
-			"region": region,
-		}).Error("region name is empty")
-		panic("Secret name of server auth internal is empty")
-		os.Exit(0)
-	}
-
-	versionState, errVST := os.LookupEnv(VERSION_STATE_KEY)
-	if errVST != true {
-		log.WithFields(log.Fields{
-			"versionState": "",
-		}).Error("versionState dont have config in env")
-		panic("versionState dont have config in env")
-		os.Exit(0)
-	}
-	sAws.Init(secretName, region, versionState)
+	sAws.Init(a.env.SecretName(), a.env.Region(), a.env.VersionState())
 
 	sString, errGetSec := sAws.GetSecret()
 	if errGetSec != nil {
@@ -249,7 +217,31 @@ func (a *AuthInternalService) getSecretFrRemote() (AllSecret, error) {
 	return allS, nil
 }
 
-func (a *AuthInternalService) UpdateSecretInLocal() error {
+func (a *AuthInternalService) TryUpdateSecretInLocal(numberTry uint) error {
+	success := false
+	var errGL error
+
+	for i := uint(0); i < numberTry; i++ {
+		err := a.updateSecretInLocal()
+		errGL = err
+		if err != nil {
+			log.WithFields(log.Fields{
+				"errorMessage": err.Error(),
+			}).Error("dont get secret from remote")
+		} else {
+			success = true
+			break
+		}
+	}
+
+	if success != true {
+		return errGL
+	}
+
+	return nil
+}
+
+func (a *AuthInternalService) updateSecretInLocal() error {
 	s, errGetFrRemote := a.getSecretFrRemote()
 	if errGetFrRemote != nil {
 		log.WithFields(log.Fields{
@@ -257,8 +249,6 @@ func (a *AuthInternalService) UpdateSecretInLocal() error {
 		}).Error("getSecretFrRemote have error")
 		return errGetFrRemote
 	}
-
-	fmt.Println("versionurrent %v \n", s.TimeUpdateSecret, s.SecretNearestOld, s.SecretCurrent)
 
 	versionCurrent, errVC := a.getVersionFrSecret(s.SecretCurrent)
 	if errVC != nil {
@@ -296,12 +286,14 @@ func (a *AuthInternalService) UpdateSecretInLocal() error {
 
 func (a *AuthInternalService) autoUpdateSecretInLocal() {
 	for {
-		err := a.UpdateSecretInLocal()
+		fmt.Println("autoUpdateSecretInLocal...")
+		err := a.TryUpdateSecretInLocal(NUMBER_TRY_UPDATE_SECRET_IN_LOCAL)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"errorMessage": err.Error(),
-			}).Error("autoUpdateSecretInLocal error")
-			fmt.Println("autoUpdateSecretInLocal error")
+			}).Error("TryUpdateSecretInLocal error")
+			panic(fmt.Sprintf("TryUpdateSecretInLocal error: %s", err.Error()))
+			os.Exit(0)
 		} else {
 			log.Info("autoUpdateSecretInLocal success")
 			fmt.Println("autoUpdateSecretInLocal success")
@@ -312,26 +304,28 @@ func (a *AuthInternalService) autoUpdateSecretInLocal() {
 	}
 }
 
-func (a *AuthInternalService) InitAuth() error {
+func (a *AuthInternalService) Init() error {
 	errEBR := a.checkAllConfigEnvBeforeRun()
 	if errEBR != nil {
 		log.WithFields(log.Fields{
 			"errorMessage": errEBR.Error(),
-		}).Error("missing config env before run packet %s", reflect.TypeOf(AuthInternalService{}).PkgPath())
+		}).Errorf("missing config env before run packet %s", reflect.TypeOf(AuthInternalService{}).PkgPath())
+		panic(fmt.Sprintf("missing config env before run packet %s", reflect.TypeOf(AuthInternalService{}).PkgPath()))
 		os.Exit(0)
 	}
 
-	err := a.UpdateSecretInLocal()
-	if err != nil {
+	errTUS := a.TryUpdateSecretInLocal(NUMBER_TRY_UPDATE_SECRET_IN_LOCAL)
+	if errTUS != nil {
 		log.WithFields(log.Fields{
-			"errorMessage": err.Error(),
-		}).Panicf("init: update secret error")
+			"errorMessage": errTUS.Error(),
+		}).Error("init: TryUpdateSecretInLocal secret error")
+		panic(fmt.Sprintf("TryUpdateSecretInLocal error : %s", errTUS.Error()))
 	} else {
 		log.Info("init: update secret in local success ")
 	}
 
-	authInternalMode := os.Getenv(IS_USE_AUTH_INTERNAL_KEY)
-	if authInternalMode == IS_USE_AUTH_INTERNAL_VALUE {
+	if a.env.IsUseAuthInternal() == IS_USE_AUTH_INTERNAL_VALUE {
+		fmt.Println("aaa")
 		go func() {
 			a.autoUpdateSecretInLocal()
 		}()
@@ -363,15 +357,8 @@ func (a AuthInternalService) standardizedVersion(v uint64) string {
 	return vNew
 }
 
-func (a AuthInternalService) ListEnvRequireSetupBeforeRunPacket() []string {
-	return []string{
-		SECRET_NAME_KEY,
-		REGION_KEY,
-		VERSION_STATE_KEY,
-		IS_USE_AUTH_INTERNAL_KEY,
+func NewAuthInternalService(env env.AuthInternalServiceConfigInterface) AuthInternalServiceInterface {
+	return &AuthInternalService{
+		env: env,
 	}
-}
-
-func NewAuthInternalService() AuthInternalServiceInterface {
-	return &AuthInternalService{}
 }

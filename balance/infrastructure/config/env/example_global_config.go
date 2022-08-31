@@ -1,4 +1,4 @@
-package auth_internal_service
+package env
 
 //package main
 //
@@ -8,7 +8,7 @@ package auth_internal_service
 //	"os"
 //	"time"
 //)
-//
+
 //func main() {
 //	log_init.Init(log_init.Log{
 //		TypeFormat: log_init.TYPE_FORMAT_TEXT,
@@ -21,7 +21,7 @@ package auth_internal_service
 //
 //	time.Sleep(1000 * time.Second)
 //}
-//
+
 //func TestEnvGlobal() env.GlobalConfigInterface {
 //	os.Setenv(env.ENV_ENVIRONMENT, env.ENV_DEV)
 //	os.Setenv(env.AWS_SECRET_NAME_GLOBAL_KEY, "payment-balance-service-qwedjfndasndajndn12")
@@ -35,7 +35,7 @@ package auth_internal_service
 //
 //	return gCf
 //}
-//
+
 //func TestAutoChangeSecret(ai env.AuthInternalServiceConfigInterface) {
 //firstInit
 //err := auth_internal_service.FirstTimeContructSecret()
@@ -81,4 +81,4 @@ package auth_internal_service
 //		time.Sleep(5 * time.Second)
 //	}
 //}()
-}
+//}

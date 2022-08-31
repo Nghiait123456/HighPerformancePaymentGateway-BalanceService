@@ -1,37 +1,39 @@
 package env
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
-	"log"
 	"os"
 )
 
 type (
 	GlobalConfig struct {
-		DefaultDBSqlUserName string `env:"DEFAULT_DB_SQL_USERNAME,notEmpty"`
-		DefaultDBSqlPassWord string `env:"DEFAULT_DB_SQL_PASSWORD,notEmpty"`
-		DefaultDBSqlLink     string `env:"DEFAULT_DB_SQL_LINK,notEmpty"`
-		DefaultDBSqlNameDB   string `env:"DEFAULT_DB_SQL_NAME_DB,notEmpty"`
+		authInternalServiceConfig AuthInternalServiceConfigInterface
 	}
 
-	DBConfigSqlDefault struct {
-		UserName string
-		PassWord string
-		Link     string
-		NameDB   string
-	}
-
-	DBConfigSqlDefaultInterface interface {
-		GetDSN() (string, error)
+	ConfigEnv struct {
+		FilePatchLogInLocal string
 	}
 
 	GlobalConfigInterface interface {
-		LoadConfig() error
-		MapConfigToStruct() error
-		DetectEnvironment() string
-		AllEnvironment() []string
+		loadEnvLocal(c ConfigEnv)
+		loadEnvDev()
+		loadEnvStaging()
+		loadEnvProduct()
+		loadEnv(c ConfigEnv)
+		mapEnvToStruct()
+		validateEnvironmentType() (string, error)
+		Init(c ConfigEnv)
+		ListEnvRequireSetUpBeforeInit() []string
+		CheckEnvRequireSetUpBeforeInit()
+
+		/**
+		  function for get
+		*/
+		AuthInternalServiceConfig() AuthInternalServiceConfigInterface
 	}
 )
 
@@ -42,9 +44,9 @@ const (
 	ENV_PRODUCT     = "product"
 	ENV_ENVIRONMENT = "ENVIRONMENT_BALANCE_SERVICE"
 
-	AWS_SECRET_NAME   = "AWS_SECRET_NAME"
-	AWS_REGION        = "AWS_REGION"
-	AWS_VERSION_STATE = "AWS_VERSION_STATE"
+	AWS_SECRET_NAME_GLOBAL_KEY   = "AWS_SECRET_NAME_GLOBAL_KEY"
+	AWS_REGION_GLOBAL_KEY        = "AWS_REGION_GLOBAL_KEY"
+	AWS_VERSION_STATE_GLOBAL_KEY = "AWS_VERSION_STATE_GLOBAL_KEY"
 )
 
 func (g GlobalConfig) AllEnvironment() []string {
@@ -55,7 +57,7 @@ func (g GlobalConfig) IsEnvironmentValid(v string) bool {
 	return slices.Contains(g.AllEnvironment(), v)
 }
 
-func (g *GlobalConfig) DetectEnvironment() (string, error) {
+func (g *GlobalConfig) validateEnvironmentType() (string, error) {
 	evm := os.Getenv(ENV_ENVIRONMENT)
 	if len(evm) == 0 {
 		errM := fmt.Sprintf("ENV_ENVIRONMENT with key %s empty or not exits", ENV_ENVIRONMENT)
@@ -72,8 +74,8 @@ func (g *GlobalConfig) DetectEnvironment() (string, error) {
 	return evm, nil
 }
 
-func (g *GlobalConfig) LoadConfig() error {
-	evm, err := g.DetectEnvironment()
+func (g *GlobalConfig) loadEnv(c ConfigEnv) {
+	evm, err := g.validateEnvironmentType()
 	if err != nil {
 		panic(err.Error())
 		os.Exit(0)
@@ -81,64 +83,140 @@ func (g *GlobalConfig) LoadConfig() error {
 
 	switch evm {
 	case ENV_LOCAL:
-		g.LoadEnvLocal()
-
+		g.loadEnvLocal(c)
+		return
+	case ENV_DEV:
+		g.loadEnvDev()
+		return
+	case ENV_PRODUCT:
+		g.loadEnvProduct()
+		return
 	}
-
-	return nil
 }
 
-func (g *GlobalConfig) LoadEnvLocal() error {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
+func (g *GlobalConfig) loadEnvLocal(c ConfigEnv) {
+	//load env
+	errL := godotenv.Load(c.FilePatchLogInLocal)
+	if errL != nil {
+		log.WithFields(log.Fields{
+			"errMessage": errL.Error(),
+		}).Error("load env file error")
+		panic(fmt.Sprintf("load env file error %s", errL.Error()))
+		os.Exit(0)
 	}
-
-	return nil
 }
 
-func (g *GlobalConfig) LoadEnvDev() error {
+func (g *GlobalConfig) loadEnvDev() {
 	// never save secret to file, always get from api other service
 	aws := NewAwsManagerSecret()
 
 	// init
-	secretName := os.Getenv(AWS_SECRET_NAME)
+	secretName := os.Getenv(AWS_SECRET_NAME_GLOBAL_KEY)
 	if secretName == "" {
-		panic("don't exits AWS_SECRET_NAME in dev")
+		panic("don't exits AWS_SECRET_NAME_GLOBAL_KEY in dev")
 		os.Exit(0)
 	}
 
-	region := os.Getenv(AWS_REGION)
+	region := os.Getenv(AWS_REGION_GLOBAL_KEY)
 	if region == "" {
-		panic("don't exits AWS_REGION in dev")
+		panic("don't exits AWS_REGION_GLOBAL_KEY in dev")
 		os.Exit(0)
 	}
 
-	versionState := os.Getenv(AWS_VERSION_STATE)
-	if versionState == "" {
-		panic("don't exits AWS_REGION in dev")
+	versionState, errV := os.LookupEnv(AWS_VERSION_STATE_GLOBAL_KEY)
+	if errV != true {
+		panic("don't exits AWS_REGION_GLOBAL_KEY in dev")
 		os.Exit(0)
 	}
 
 	aws.Init(secretName, region, versionState)
 
-	//get
-	//secretV, err := aws.GetSecret()
-	//if err != nil {
-	//	panic(fmt.Sprintf("get secret from aws manager secret in dev error, %s", err.Error()))
-	//	os.Exit(0)
-	//}
+	secretS, errGS := aws.GetSecret()
+	if errGS != nil {
+		panic(fmt.Sprintf("get secret from aws manager secret in dev error: %s", errGS.Error()))
+		os.Exit(0)
+	}
 
-	// todo mapping secret to struct
+	serretM := map[string]string{}
+	errCVS := json.Unmarshal([]byte(secretS), &serretM)
+	if errCVS != nil {
+		panic(fmt.Sprintf("secret wrong format when convert form json to map error: %s", errCVS.Error()))
+		os.Exit(0)
+	}
 
-	return nil
-
+	// merger
+	for k, v := range serretM {
+		err := os.Setenv(k, v)
+		if err != nil {
+			panic(fmt.Sprintf("set env have error: %s", err.Error()))
+			os.Exit(0)
+		}
+	}
 }
 
-func (g *GlobalConfig) LoadEnvStaging() error {
-	return nil
+func (g *GlobalConfig) loadEnvStaging() {
+	//return nil
 }
 
-func (g *GlobalConfig) LoadEnvProduct() error {
-	return nil
+func (g *GlobalConfig) loadEnvProduct() {
+	//return nil
+}
+
+func (g *GlobalConfig) contructAllChildStruct() {
+	g.authInternalServiceConfig = NewAuthInternalServiceConfig()
+}
+func (g *GlobalConfig) mapEnvToStruct() {
+	g.authInternalServiceConfig.Load()
+}
+
+func (g *GlobalConfig) Init(c ConfigEnv) {
+	g.CheckEnvRequireSetUpBeforeInit()
+	g.loadEnv(c)
+	g.contructAllChildStruct()
+	g.mapEnvToStruct()
+}
+
+func (g GlobalConfig) ListEnvRequireSetUpBeforeInit() []string {
+	return []string{
+		ENV_ENVIRONMENT,
+		AWS_SECRET_NAME_GLOBAL_KEY,
+		AWS_REGION_GLOBAL_KEY,
+		AWS_VERSION_STATE_GLOBAL_KEY,
+	}
+}
+
+func (g GlobalConfig) CheckEnvRequireSetUpBeforeInit() {
+	envEnviro := os.Getenv(ENV_ENVIRONMENT)
+	if envEnviro == "" {
+		panic("don't exits ENV_ENVIRONMENT")
+		os.Exit(0)
+	}
+
+	if envEnviro != ENV_LOCAL {
+		secretName := os.Getenv(AWS_SECRET_NAME_GLOBAL_KEY)
+		if secretName == "" {
+			panic("don't exits AWS_SECRET_NAME_GLOBAL_KEY")
+			os.Exit(0)
+		}
+
+		region := os.Getenv(AWS_REGION_GLOBAL_KEY)
+		if region == "" {
+			panic("don't exits AWS_REGION_GLOBAL_KEY")
+			os.Exit(0)
+		}
+
+		_, errV := os.LookupEnv(AWS_VERSION_STATE_GLOBAL_KEY)
+		if errV != true {
+			panic("don't exits AWS_REGION_GLOBAL_KEY")
+			os.Exit(0)
+		}
+	}
+}
+
+func (g GlobalConfig) AuthInternalServiceConfig() AuthInternalServiceConfigInterface {
+	return g.authInternalServiceConfig
+}
+func NewGlobalConfig() GlobalConfigInterface {
+	g := GlobalConfig{}
+	return &g
 }

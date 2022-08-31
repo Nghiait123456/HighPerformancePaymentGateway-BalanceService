@@ -15,6 +15,7 @@ import (
 type (
 	AutoChangeSecret struct {
 		timeUpdateSecret uint64 // ms
+		env              env.AuthInternalServiceConfigInterface
 	}
 
 	AutoChangeSecretInterface interface {
@@ -22,47 +23,24 @@ type (
 		getSecretFrRemote() (AllSecret, error)
 		replaceNewSecretInRemote() error
 		createNewSecret(currentSecret string) (string, error)
-		autoUpdateNewTimeChangeSecret() error
+		updateNewTimeChangeSecret() error
 		checkAllConfigEnvBeforeRun() error
+		TryUpdateNewTimeChangeSecret(numberTry uint) error
+		TryReplaceNewSecretInRemote(numberTry uint) error
 	}
 )
 
 const (
-	IS_AUTO_CHANGE_SECRET_REMOTE_KEY       = "IS_AUTO_CHANGE_SECRET_REMOTE_KEY"
+	//IS_AUTO_CHANGE_SECRET_REMOTE_KEY       = "AUTH_INTERNAL_SERVICE_IS_AUTO_CHANGE_SECRET_REMOTE_KEY"
 	IS_AUTO_CHANGE_SECRET_REMOTE_VALUE     = "true"
 	IS_NOT_AUTO_CHANGE_SECRET_REMOTE_VALUE = "false"
+	NUMBER_TRY_UPDATE_TIME_SELECT          = 20
 )
 
 func (a *AutoChangeSecret) getSecretFrRemote() (AllSecret, error) {
 	allS := AllSecret{}
 	sAws := env.NewAwsManagerSecret()
-	secretName := os.Getenv(SECRET_NAME_KEY)
-	if secretName == "" {
-		log.WithFields(log.Fields{
-			"secretName": "",
-		}).Error("Secret name is empty")
-		panic("Secret name of server auth internal is empty")
-		os.Exit(0)
-	}
-
-	region := os.Getenv(REGION_KEY)
-	if region == "" {
-		log.WithFields(log.Fields{
-			"region": region,
-		}).Error("region name is empty")
-		panic("Secret name of server auth internal is empty")
-		os.Exit(0)
-	}
-
-	versionState, errVST := os.LookupEnv(VERSION_STATE_KEY)
-	if errVST != true {
-		log.WithFields(log.Fields{
-			"versionState": "",
-		}).Error("versionState dont have config in env")
-		panic("versionState dont have config in env")
-		os.Exit(0)
-	}
-	sAws.Init(secretName, region, versionState)
+	sAws.Init(a.env.SecretName(), a.env.Region(), a.env.VersionState())
 
 	sString, errGetSec := sAws.GetSecret()
 	if errGetSec != nil {
@@ -88,25 +66,23 @@ func (a *AutoChangeSecret) getSecretFrRemote() (AllSecret, error) {
 }
 
 func (a AutoChangeSecret) checkAllConfigEnvBeforeRun() error {
-	if os.Getenv(SECRET_NAME_KEY) == "" {
-		return errors.New(fmt.Sprintf("missing config env key %s", SECRET_NAME_KEY))
+	if a.env.SecretName() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_SECRET_NAME_KEY))
 	}
 
-	if os.Getenv(REGION_KEY) == "" {
-		return errors.New(fmt.Sprintf("missing config env key %s", REGION_KEY))
+	if a.env.Region() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_REGION_KEY))
 	}
 
-	_, e := os.LookupEnv(VERSION_STATE_KEY)
-	if e != true {
-		return errors.New(fmt.Sprintf("missing config env key %s", VERSION_STATE_KEY))
+	if a.env.VersionState() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNER_SERVICE_VERSION_STATE_KEY))
 	}
 
-	if os.Getenv(IS_AUTO_CHANGE_SECRET_REMOTE_KEY) == "" {
-		return errors.New(fmt.Sprintf("missing config env key %s", IS_AUTO_CHANGE_SECRET_REMOTE_KEY))
+	if a.env.IsUseAutoChangeSecret() == "" {
+		return errors.New(fmt.Sprintf("missing config env key %s", env.AUTH_INTERNAL_SERVICE_IS_AUTO_CHANGE_SECRET_REMOTE_KEY))
 	}
 
 	return nil
-
 }
 
 func (a *AutoChangeSecret) replaceNewSecretInRemote() error {
@@ -122,7 +98,7 @@ func (a *AutoChangeSecret) replaceNewSecretInRemote() error {
 	if errNS != nil {
 		log.WithFields(log.Fields{
 			"errorMessage": errNS.Error(),
-		}).Panicf("createNewSecret have error")
+		}).Error("createNewSecret have error")
 		return errNS
 	}
 
@@ -140,44 +116,40 @@ func (a *AutoChangeSecret) replaceNewSecretInRemote() error {
 		return errCS
 	}
 	secretUString := string(secretUB)
-
-	secretName := os.Getenv(SECRET_NAME_KEY)
-	if secretName == "" {
-		log.WithFields(log.Fields{
-			"secretName": "",
-		}).Error("Secret name is empty")
-		panic("Secret name of server auth internal is empty")
-		os.Exit(0)
-	}
-
-	region := os.Getenv(REGION_KEY)
-	if region == "" {
-		log.WithFields(log.Fields{
-			region: "",
-		}).Error("region name is empty")
-		panic("Secret name of server auth internal is empty")
-		os.Exit(0)
-	}
-
-	versionState, errVST := os.LookupEnv(VERSION_STATE_KEY)
-	if errVST != true {
-		log.WithFields(log.Fields{
-			"versionState": "",
-		}).Error("versionState dont have config in env")
-		panic("versionState dont have config in env")
-		os.Exit(0)
-	}
-
 	sAws := env.NewAwsManagerSecret()
-	sAws.Init(secretName, region, versionState)
+	sAws.Init(a.env.SecretName(), a.env.Region(), a.env.VersionState())
 	errUSS := sAws.UpdateSecretString(secretUString)
 	if errUSS != nil {
 		log.WithFields(log.Fields{
 			"errorMessage": errUSS.Error(),
 		}).Error("update secret error")
+		return errUSS
 	}
 
 	log.Infof("ReplaceNewSecretInRemote success %s", secretUString)
+	return nil
+}
+
+func (a *AutoChangeSecret) TryReplaceNewSecretInRemote(numberTry uint) error {
+	success := false
+	var errGL error
+	for i := uint(0); i < numberTry; i++ {
+		err := a.replaceNewSecretInRemote()
+		errGL = err
+		if err == nil {
+			success = true
+			break
+		} else {
+			log.WithFields(log.Fields{
+				"errorMessage": err.Error(),
+			}).Error("replaceNewSecretInRemote error")
+		}
+	}
+
+	if success != true {
+		return errGL
+	}
+
 	return nil
 }
 
@@ -211,12 +183,13 @@ func (a AutoChangeSecret) standardizedVersion(v uint64) string {
 	return vNew
 }
 
-func (a *AutoChangeSecret) autoUpdateNewTimeChangeSecret() error {
+func (a *AutoChangeSecret) updateNewTimeChangeSecret() error {
 	allS, errGS := a.getSecretFrRemote()
 	if errGS != nil {
 		log.WithFields(log.Fields{
 			"errorMessage": errGS.Error(),
 		}).Error("dont get secret from remote")
+		return errGS
 	}
 
 	timeU, errParserTime := strconv.ParseUint(allS.TimeUpdateSecret, 10, 64)
@@ -231,9 +204,43 @@ func (a *AutoChangeSecret) autoUpdateNewTimeChangeSecret() error {
 	return nil
 }
 
+func (a *AutoChangeSecret) TryUpdateNewTimeChangeSecret(numberTry uint) error {
+	success := false
+	var errGL error
+
+	for i := uint(0); i < numberTry; i++ {
+		err := a.updateNewTimeChangeSecret()
+		errGL = err
+		if err != nil {
+			log.WithFields(log.Fields{
+				"errorMessage": err.Error(),
+			}).Error("dont get secret from remote")
+		} else {
+			success = true
+			break
+		}
+	}
+
+	if success != true {
+		return errGL
+	}
+
+	return nil
+}
+
 func (a AutoChangeSecret) Init() error {
-	autoChangeRemoteSecretMode := os.Getenv(IS_AUTO_CHANGE_SECRET_REMOTE_KEY)
-	if autoChangeRemoteSecretMode == IS_AUTO_CHANGE_SECRET_REMOTE_VALUE {
+	errT := a.TryUpdateNewTimeChangeSecret(NUMBER_TRY_UPDATE_TIME_SELECT)
+	if errT != nil {
+		log.WithFields(log.Fields{
+			"errorMessage": errT.Error(),
+		}).Error("updateNewTimeChangeSecret error")
+		panic(fmt.Sprintf("updateNewTimeChangeSecret error: %s", errT.Error()))
+		os.Exit(0)
+	} else {
+		log.Info("updateNewTimeChangeSecret success")
+	}
+
+	if a.env.IsUseAutoChangeSecret() == IS_AUTO_CHANGE_SECRET_REMOTE_VALUE {
 		go func() {
 			a.autoReplaceNewSecretInRemote()
 		}()
@@ -244,19 +251,20 @@ func (a AutoChangeSecret) Init() error {
 
 func (a AutoChangeSecret) autoReplaceNewSecretInRemote() {
 	for {
-		errT := a.autoUpdateNewTimeChangeSecret()
-		if errT != nil {
+		errTUNT := a.TryUpdateNewTimeChangeSecret(NUMBER_TRY_UPDATE_TIME_SELECT)
+		if errTUNT != nil {
 			log.WithFields(log.Fields{
-				"errorMessage": errT.Error(),
-			}).Error("autoUpdateNewTimeChangeSecret error")
+				"errorMessage": errTUNT.Error(),
+			}).Error("updateNewTimeChangeSecret error")
+			panic(fmt.Sprintf("dont TryUpdateNewTimeChangeSecret, error : %s", errTUNT.Error()))
 		} else {
-			log.Info("autoUpdateNewTimeChangeSecret success")
+			log.Info("updateNewTimeChangeSecret success")
 		}
 
-		errRNS := a.replaceNewSecretInRemote()
-		if errRNS != nil {
+		errTRNS := a.TryReplaceNewSecretInRemote(NUMBER_TRY_UPDATE_TIME_SELECT)
+		if errTRNS != nil {
 			log.WithFields(log.Fields{
-				"errorMessage": errRNS.Error(),
+				"errorMessage": errTRNS.Error(),
 			}).Error("replace secret error")
 		} else {
 			log.Info("autoReplaceNewSecretInRemote success")
@@ -304,7 +312,7 @@ func FirstTimeContructSecret() error {
 	}
 	secretUString := string(secretUB)
 
-	secretName := os.Getenv(SECRET_NAME_KEY)
+	secretName := os.Getenv(env.AUTH_INTERNER_SERVICE_SECRET_NAME_KEY)
 	if secretName == "" {
 		log.WithFields(log.Fields{
 			"secretName": "",
@@ -313,7 +321,7 @@ func FirstTimeContructSecret() error {
 		os.Exit(0)
 	}
 
-	region := os.Getenv(REGION_KEY)
+	region := os.Getenv(env.AUTH_INTERNER_SERVICE_REGION_KEY)
 	if region == "" {
 		log.WithFields(log.Fields{
 			region: "",
@@ -322,7 +330,7 @@ func FirstTimeContructSecret() error {
 		os.Exit(0)
 	}
 
-	versionState, errVST := os.LookupEnv(VERSION_STATE_KEY)
+	versionState, errVST := os.LookupEnv(env.AUTH_INTERNER_SERVICE_REGION_KEY)
 	if errVST != true {
 		log.WithFields(log.Fields{
 			"versionState": "",
@@ -344,15 +352,8 @@ func FirstTimeContructSecret() error {
 	return nil
 }
 
-func (a AutoChangeSecret) ListEnvRequireSetupBeforeRunPacket() []string {
-	return []string{
-		SECRET_NAME_KEY,
-		REGION_KEY,
-		VERSION_STATE_KEY,
-		IS_AUTO_CHANGE_SECRET_REMOTE_KEY,
+func NewAutoChangeSecret(env env.AuthInternalServiceConfigInterface) AutoChangeSecretInterface {
+	return &AutoChangeSecret{
+		env: env,
 	}
-}
-
-func NewAutoChangeSecret() AutoChangeSecretInterface {
-	return &AutoChangeSecret{}
 }

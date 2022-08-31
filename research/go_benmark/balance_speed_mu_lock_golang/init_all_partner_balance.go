@@ -103,7 +103,7 @@ func InitAllPartnerData() allPartnerInterface {
 	allPartner := allPartner{}
 	err := allPartner.InitAllPartnerInfo()
 	if err != nil {
-		panic("InitAuth all partner error: " + err.Error())
+		panic("Init all partner error: " + err.Error())
 	}
 
 	return &allPartner
