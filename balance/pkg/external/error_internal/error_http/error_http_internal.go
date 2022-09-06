@@ -8,9 +8,9 @@ type (
 )
 
 const (
-	ERROR_HTTP_INTERNAL_SIGNATURE = "ERROR_HTTP_INTERNAL_SIGNATURE"
 	ERROR_INTERNAL_CODE           = 500
 	ERROR_INTERNAL_MESSAGE        = "Internal Error"
+	ERROR_HTTP_INTERNAL_SIGNATURE = "error_http_ERROR_HTTP_INTERNAL_SIGNATURE"
 )
 
 func NewErrorInternal() ErrorInternal {
@@ -21,6 +21,6 @@ func NewErrorInternal() ErrorInternal {
 	}
 }
 
-func IsErrorHttpInternal(e ErrorInternal) bool {
-	return e.GetSignature() == ERROR_HTTP_INTERNAL_SIGNATURE
+func IsErrorHttpInternal(e error) bool {
+	return error_base.IsErrorOfType(e, ERROR_HTTP_INTERNAL_SIGNATURE)
 }

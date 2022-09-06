@@ -3,10 +3,12 @@ package calculator
 import (
 	"errors"
 	"fmt"
+	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator/err/err_handle_request_balance"
 	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/logs_request_balance"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
 	"time"
@@ -51,7 +53,7 @@ type (
 	calculatorPartnerBalancerInterface interface {
 		isValidAmount() bool
 		isFull() bool
-		isApproveOrder(b BalancerRequest) (bool, string)
+		isApproveOrder(b BalancerRequest) (bool, error)
 		increaseAmount(amountRequest uint64)
 		increaseAmountPlaceHolder(amountRequest uint64)
 		decreaseAmount(amountRequest uint64) error
@@ -63,7 +65,7 @@ type (
 		updateRequestApprovedLocalInMemory(b BalancerRequest)
 		revertRequestApprovedLocalInMemory(b BalancerRequest) error
 		saveLogsPlaceHolder(s saveLogsDB) (bool, error)
-		saveRequestApprovedDB(s saveLogsDB) (bool, error)
+		saveRequestApproved(s saveLogsDB) (bool, error)
 		saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error)
 	}
 )
@@ -81,21 +83,22 @@ func (pB *partnerBalance) isValidAmount() bool {
 	return pB.balance >= 0 && pB.amountPlaceHolder >= 0 && pB.balance > pB.amountPlaceHolder
 }
 
-func (pB *partnerBalance) isApproveOrder(b BalancerRequest) (bool, string) {
+func (pB *partnerBalance) isApproveOrder(b BalancerRequest) (bool, error) {
 	switch b.typeRequest {
 	case typeRequestPayment:
 		if b.AmountRequest+pB.amountPlaceHolder <= pB.balance {
-			return true, ""
+			return true, nil
 		}
-		return false, "not enough money"
+		return false, err_handle_request_balance.NewErrorPartnerNotEnoughMoney()
 
 	case typeRequestRecharge:
-		return true, ""
+		return true, nil
 
 	default:
-		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
-		pB.EStop.ThrowEmergencyStop()
-		panic(err)
+		log.WithFields(log.Fields{
+			"typeRequest": b.typeRequest,
+		}).Error("type request balance is not valid")
+		return false, err_handle_request_balance.NewErrorTypeRequestBalanceNotValid()
 	}
 }
 
@@ -147,20 +150,20 @@ func (pB *partnerBalance) HandleOneRequestBalance(b BalancerRequest) (bool, erro
 	defer pB.muLock.Unlock()
 
 	if pB.EStop.IsStop() {
-		return false, errors.New("partner is stopping")
+		return false, err_handle_request_balance.NewErrorPartnerStoppingForEmergenceStop()
 	}
 
 	if pB.isFull() {
-		return false, errors.New("balance is full, please try again")
+		return false, err_handle_request_balance.NewErrorPartnerStoppingForEmergenceStop()
 	}
 
 	if !pB.isValidAmount() {
-		return false, errors.New("amount partner not valid")
+		return false, err_handle_request_balance.NewErrorAmountPartnerIsNotValid()
 	}
 
 	approved, errA := pB.isApproveOrder(b)
 	if !approved {
-		return false, errors.New(errA)
+		return false, errA
 	}
 
 	//update to local in memory
@@ -171,15 +174,19 @@ func (pB *partnerBalance) HandleOneRequestBalance(b BalancerRequest) (bool, erro
 		pb: pB.ValueObject(),
 	}
 
-	updatedDB, errUDB := pB.saveRequestApprovedDB(saveLogsDB)
+	updatedDB, errUDB := pB.saveRequestApproved(saveLogsDB)
 	if !updatedDB {
-		//revert if error
+		log.WithFields(log.Fields{
+			"errorMessage": errUDB.Error(),
+		}).Error("dont saveRequestApproved")
+
+		//revert
 		errRv := pB.revertRequestApprovedLocalInMemory(b)
 		if errRv != nil {
 			panic(fmt.Sprintf("don't revert request approved ib local in memory, err: %s", errRv.Error()))
 			os.Exit(0)
 		}
-		return false, errUDB
+		return false, err_handle_request_balance.NewErrorDefaultError()
 	}
 
 	return true, nil
@@ -254,7 +261,7 @@ func (pB *partnerBalance) ValueObject() partnerBalance {
 	return pBValue
 }
 
-func (pB *partnerBalance) saveTypeRequestPaymentDB(s saveLogsDB) (bool, error) {
+func (pB *partnerBalance) saveTypeRequestPayment(s saveLogsDB) (bool, error) {
 	// save log place holder
 	status, err := pB.saveLogsPlaceHolder(s)
 	return status, err
@@ -270,7 +277,7 @@ func (pB *partnerBalance) revertTypeRequestRechargeLocalInMemory(b BalancerReque
 	return pB.decreaseAmount(b.AmountRequest)
 }
 
-func (pB *partnerBalance) saveTypeRequestRechargeDB(s saveLogsDB) (bool, error) {
+func (pB *partnerBalance) saveTypeRequestRecharge(s saveLogsDB) (bool, error) {
 	// save log recharge
 	status, err := pB.saveLogsAndAmountReChargeDB(s)
 	return status, err
@@ -302,12 +309,12 @@ func (pB *partnerBalance) revertRequestApprovedLocalInMemory(b BalancerRequest) 
 	}
 }
 
-func (pB *partnerBalance) saveRequestApprovedDB(s saveLogsDB) (bool, error) {
+func (pB *partnerBalance) saveRequestApproved(s saveLogsDB) (bool, error) {
 	switch s.b.typeRequest {
 	case typeRequestPayment:
-		return pB.saveTypeRequestPaymentDB(s)
+		return pB.saveTypeRequestPayment(s)
 	case typeRequestRecharge:
-		return pB.saveTypeRequestRechargeDB(s)
+		return pB.saveTypeRequestRecharge(s)
 
 	default:
 		err := fmt.Sprintf("typeRequest %s to balancer service not exits", s.b.typeRequest)
@@ -316,21 +323,6 @@ func (pB *partnerBalance) saveRequestApprovedDB(s saveLogsDB) (bool, error) {
 }
 
 func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
-	//var brl orm.BalanceRequestLog
-	//brl.OrderId = s.b.orderID
-	//brl.PartnerCode = s.b.PartnerCode
-	//brl.AmountRequest = s.b.AmountRequest
-	//brl.AmountPlaceHolder = s.pb.amountPlaceHolder
-	//brl.Balance = s.pb.balance
-	//brl.Status = orm.BalanceRequestLog{}.StatusProcessing()
-	//brl.CreatedAt = uint32(time.Now().Unix())
-	//brl.UpdatedAt = uint32(time.Now().Unix())
-	//
-	//ok := s.saveLogRequestBalance.Save(s.lbShardBalanceLog, brl)
-	//if ok != nil {
-	//	return false, ok
-	//}
-
 	o := logs_request_balance.OrderLog{
 		OrderId: s.b.orderID,
 		Amount:  s.b.AmountRequest,

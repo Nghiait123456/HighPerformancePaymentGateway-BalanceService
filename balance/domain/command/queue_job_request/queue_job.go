@@ -1,6 +1,9 @@
 package queue_job_request
 
-import "github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
+import (
+	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
+	log "github.com/sirupsen/logrus"
+)
 
 type (
 	OneRequest = calculator.BalancerRequest
@@ -14,6 +17,7 @@ type (
 	QueueJobInterface interface {
 		Push(rq OneRequest)
 		AutoHandleRequest()
+		Init(allP calculator.AllPartnerInterface)
 	}
 )
 
@@ -25,18 +29,35 @@ func (q *QueueJob) AutoHandleRequest() {
 	for {
 		select {
 		case rq := <-q.QJob:
-			pn, errPN := q.AllPartner.GetOnePartner(rq.PartnerCode)
-			if errPN != nil {
-				// todo push error, push even, log
+			pn, errGOP := q.AllPartner.GetOnePartner(rq.PartnerCode)
+			if errGOP != nil {
+				log.WithFields(log.Fields{
+					"errMessage": errGOP.Error(),
+				}).Error("dont get one partner for handle request")
+
+				//todo push error, push even, log
+				break
 			}
 
-			rs, _ := pn.HandleOneRequestBalance(rq)
+			rs, errHOR := pn.HandleOneRequestBalance(rq)
 			if rs != true {
+				log.WithFields(log.Fields{
+					"errMessage": errHOR.Error(),
+				}).Error("dont get one partner for handle request")
 				// todo push error, push even, log
+				break
 			}
+
+			// todo push error, push even, log success
 		}
 	}
+}
 
+func (q *QueueJob) Init(allP calculator.AllPartnerInterface) {
+	q.AllPartner = allP
+	go func() {
+		q.AutoHandleRequest()
+	}()
 }
 
 func NewQueueJob() QueueJobInterface {

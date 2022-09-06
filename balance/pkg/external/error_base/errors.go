@@ -63,6 +63,15 @@ func GetErrorBase(e error) Error {
 	return e.(Error)
 }
 
+func IsErrorOfType(e error, signatureError string) bool {
+	if !IsErrorBase(e) {
+		return false
+	}
+
+	eN := GetErrorBase(e)
+	return eN.GetSignature() == signatureError
+}
+
 func New(code int, message string) Error {
 	return newBaseError(code, message)
 }
