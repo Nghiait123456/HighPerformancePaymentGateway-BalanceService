@@ -1,11 +1,19 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
+	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
 	"os"
-	"time"
 )
+
+func handle(c *fiber.Ctx) error {
+	return c.SendString("Hello, World!")
+}
 
 func main() {
 	log_init.Init(log_init.Log{
@@ -17,7 +25,86 @@ func main() {
 	gCf := TestEnvGlobal()
 	TestAutoChangeSecret(gCf.AuthInternalServiceConfig())
 
-	time.Sleep(1000 * time.Second)
+	app := fiber.New()
+
+	app.Get("/", handle)
+
+	//TestValidate()
+	validate.Example()
+
+	app.Listen(":3000")
+}
+
+func TestJsonHamas() {
+	ListES := validate.ListErrorsDefaultShow{}
+
+	oneErr := validate.OneErrorDefaultShow{
+		Field:     "name",
+		Rule:      "require",
+		Message:   "field is require",
+		ParamRule: "required",
+	}
+
+	ListES["name"] = oneErr
+
+	showE := validate.DefaultShowError{
+		ListError: ListES,
+	}
+
+	rs, errCV := json.Marshal(showE)
+	if errCV != nil {
+		fmt.Println("error")
+	}
+
+	fmt.Println(string(rs))
+}
+
+func TestValidate() {
+
+	// User contains user information
+	type User struct {
+		FirstName   string `json:"fname" validate:"maxlengError,alpha,required"`
+		LastName    string `json:"lname" validate:"alpha"`
+		Age         uint8  `validate:"gte=20,lte=65"`
+		Email       string `json:"e-mail" validate:"required,email"`
+		JoiningDate string `validate:"datetime"`
+	}
+
+	// use a single instance of validate, it caches struct info
+	var validate *validator.Validate
+
+	validate = validator.New()
+	validate.RegisterValidation("maxlengError", func(fl validator.FieldLevel) bool {
+		return len(fl.Field().String()) > 6
+	})
+
+	user := &User{
+		FirstName:   "",
+		LastName:    "Test",
+		Age:         75,
+		Email:       "Badger.Smith@",
+		JoiningDate: "005-25-10",
+	}
+
+	err := validate.Struct(user)
+	if err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Println("------ List of tag fields with error ---------")
+
+		for _, err := range err.(validator.ValidationErrors) {
+			fmt.Println(err.StructField())
+			fmt.Println(err.ActualTag())
+			fmt.Println(err.Kind())
+			fmt.Println(err.Value())
+			fmt.Println(err.Param())
+			fmt.Println("---------------")
+		}
+		return
+	}
 }
 
 func TestEnvGlobal() env.GlobalConfigInterface {
