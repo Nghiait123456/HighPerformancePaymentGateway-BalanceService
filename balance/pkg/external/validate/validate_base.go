@@ -19,7 +19,7 @@ type (
 		ResignValidateCustom(ruleNameCustom string, vc ValidateCustom)
 		ConvertErrorValidate(err error) (error, MessageErrors)
 		ShowErrors(m MessageErrors, s ShowError) (error, interface{})
-		SetMessageForRule(m map[string]string)
+		SetMessageForRule(m MapMessage)
 		Validate() *validator.Validate
 		SetValidate(va *validator.Validate)
 		SetMapRuleToMessage(vM MapMessage)
@@ -80,5 +80,9 @@ func (v *ValidateBase) SetMapRuleToMessage(vM MapMessage) {
 }
 
 func NewBaseValidate() ValidateBaseInterface {
-	return &ValidateBase{}
+	v := ValidateBase{}
+	v.SetMapRuleToMessage(make(MapMessage))
+	v.SetValidate(validator.New())
+
+	return &v
 }

@@ -9,10 +9,16 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
 	"os"
+	"reflect"
 )
 
 func handle(c *fiber.Ctx) error {
 	return c.SendString("Hello, World!")
+}
+
+type Person struct {
+	Name interface{} `json:"name" xml:"name" form:"name"`
+	Pass interface{} `json:"pass" xml:"pass" form:"pass"`
 }
 
 func main() {
@@ -29,12 +35,32 @@ func main() {
 
 	app.Get("/", handle)
 
+	app.Post("/", func(c *fiber.Ctx) error {
+		return response(c)
+		persons := Person{}
+		fmt.Println(fmt.Sprintf("all Param, %v , Param %v , Body %v, Get %v \n", c.AllParams(), c.FormValue("pass", "zzzzzzzzzz"), string(c.Body()), c.Get("pass")))
+
+		if err := c.BodyParser(&persons); err != nil {
+			fmt.Println(fmt.Sprintf("have error %s", err.Error()))
+		} else {
+			fmt.Printf("success %v %v %v \n", persons, reflect.TypeOf(persons.Name), reflect.TypeOf(persons.Pass))
+			return c.JSON(persons)
+		}
+
+		fmt.Printf("error %v \n", persons)
+		return c.SendString("Post Cancel")
+		// []main.Person{main.Person{Name:"john", Pass:"doe"}, main.Person{Name:"jack", Pass:"jill"}}
+	})
+
 	//TestValidate()
 	validate.Example()
 
 	app.Listen(":3000")
 }
 
+func response(c *fiber.Ctx) error {
+	return c.SendString("Success !!!!!!!!!!!!!!!111")
+}
 func TestJsonHamas() {
 	ListES := validate.ListErrorsDefaultShow{}
 
@@ -75,6 +101,7 @@ func TestValidate() {
 
 	validate = validator.New()
 	validate.RegisterValidation("maxlengError", func(fl validator.FieldLevel) bool {
+		fmt.Println("ffffff", fl.Field())
 		return len(fl.Field().String()) > 6
 	})
 

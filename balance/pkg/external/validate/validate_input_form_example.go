@@ -8,9 +8,11 @@ import (
 type ValidateFormExample = ValidateBase
 
 func Example() {
-	v := ValidateFormExample{}
-	v.SetMapRuleToMessage(make(MapMessage))
-	v.SetValidate(validator.New())
+	//v := ValidateFormExample{}
+	//v.SetMapRuleToMessage(make(MapMessage))
+	//v.SetValidate(validator.New())
+
+	v := NewBaseValidate()
 
 	v.ResignValidateCustom("minLength", func(fl validator.FieldLevel) bool {
 		return len(fl.Field().String()) > 6
