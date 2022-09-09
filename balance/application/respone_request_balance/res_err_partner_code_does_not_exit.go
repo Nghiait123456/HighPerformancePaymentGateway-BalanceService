@@ -7,7 +7,7 @@ const (
 
 func ErrPartnerCodeDoesNotExist() RequestBalanceResponse {
 	return RequestBalanceResponse{
-		Status:  ERR_STATUS,
+		Status:  STATUS_ERROR,
 		Code:    ERROR_CODE_PARTNERCODE_DOES_NOT_EXITS,
 		Message: ERROR_MESSAGE_PARTNERCODE_DOES_NOT_EXITS,
 	}

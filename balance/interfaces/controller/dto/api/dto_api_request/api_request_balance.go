@@ -9,15 +9,6 @@ import (
 )
 
 type (
-	RequestBalanceDtoRaw struct {
-		AmountRequest         any `json:"AmountRequest" ml:"AmountRequest" form:"AmountRequest"`
-		PartnerCode           any `json:"PartnerCode" ml:"PartnerCode" form:"PartnerCode"`
-		PartnerIdentification any `json:"PartnerIdentification" ml:"PartnerIdentification" form:"PartnerIdentification"`
-		OrderID               any `json:"OrderID" ml:"OrderID" form:"OrderID"`
-		// create order, update amount when partner recharge
-		TypeRequest any `json:"TypeRequest" ml:"TypeRequest" form:"TypeRequest"`
-	}
-
 	RequestBalanceDto struct {
 		AmountRequest         uint64 `json:"AmountRequest" ml:"AmountRequest" form:"AmountRequest" validate:"required,minAmount,maxAmount"`
 		PartnerCode           string `json:"PartnerCode" ml:"PartnerCode" form:"PartnerCode" validate:"required,partnerExist,partnerActive"`
@@ -50,4 +41,8 @@ func (a *RequestBalanceDto) BindDataDto(c *fiber.Ctx) (dto_api_response.Response
 	}
 
 	return dto_api_response.ResponseRequestBalanceDto{}, nil
+}
+
+func NewRequestBalanceDto() *RequestBalanceDto {
+	return &RequestBalanceDto{}
 }

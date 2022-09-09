@@ -9,7 +9,6 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
 	"os"
-	"reflect"
 )
 
 func handle(c *fiber.Ctx) error {
@@ -17,8 +16,8 @@ func handle(c *fiber.Ctx) error {
 }
 
 type Person struct {
-	Name interface{} `json:"name" xml:"name" form:"name"`
-	Pass interface{} `json:"pass" xml:"pass" form:"pass"`
+	Name uint64 `json:"name" xml:"name" form:"name"`
+	//Pass interface{} `json:"pass" xml:"pass" form:"pass"`
 }
 
 func main() {
@@ -36,21 +35,22 @@ func main() {
 	app.Get("/", handle)
 
 	app.Post("/", func(c *fiber.Ctx) error {
-		return response(c)
+		fmt.Printf("have error %s \n", "hahaha")
 		persons := Person{}
-		fmt.Println(fmt.Sprintf("all Param, %v , Param %v , Body %v, Get %v \n", c.AllParams(), c.FormValue("pass", "zzzzzzzzzz"), string(c.Body()), c.Get("pass")))
+		//fmt.Println(fmt.Sprintf("all Param, %v ",c.FormValue("pass", "zzz"))
 
 		if err := c.BodyParser(&persons); err != nil {
 			fmt.Println(fmt.Sprintf("have error %s", err.Error()))
 		} else {
-			fmt.Printf("success %v %v %v \n", persons, reflect.TypeOf(persons.Name), reflect.TypeOf(persons.Pass))
-			return c.JSON(persons)
+			//fmt.Printf("success %v %v %v \n", persons, reflect.TypeOf(persons.Name), reflect.TypeOf(persons.Pass))
 		}
 
-		fmt.Printf("error %v \n", persons)
-		return c.SendString("Post Cancel")
-		// []main.Person{main.Person{Name:"john", Pass:"doe"}, main.Person{Name:"jack", Pass:"jill"}}
+		return c.JSON(persons)
 	})
+
+	//fmt.Printf("error %v \n", persons)
+	//return c.SendString("Post Cancel")
+	// []main.Person{main.Person{Name:"john", Pass:"doe"}, main.Person{Name:"jack", Pass:"jill"}}
 
 	//TestValidate()
 	validate.Example()

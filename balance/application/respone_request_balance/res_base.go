@@ -9,6 +9,14 @@ type (
 )
 
 const (
-	ERR_STATUS     = "error"
-	SUCCESS_STATUS = "success"
+	STATUS_ERROR   = "error"
+	STATUS_SUCCESS = "success"
 )
+
+func (r RequestBalanceResponse) IsError() bool {
+	return r.Status == STATUS_ERROR
+}
+
+func (r RequestBalanceResponse) IsSuccess() bool {
+	return r.Status == STATUS_SUCCESS
+}

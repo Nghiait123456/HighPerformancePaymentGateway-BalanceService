@@ -1,12 +1,15 @@
 package handle
 
 import (
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/high-performance-payment-gateway/balance-service/balance/application"
 	"github.com/high-performance-payment-gateway/balance-service/balance/application/respone_request_balance"
+	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
+	validate_api "github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/api/validate"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_request"
+	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_response"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/http/http_status"
+	validate_base "github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
 )
 
 type (
@@ -29,21 +32,42 @@ func (r *RequestBalance) Inject(
 }
 
 func (r *RequestBalance) HandleOneRequestBalance(c *fiber.Ctx) error {
-	rq := []dto_api_request.RequestBalanceDto{}
-	if err := c.BodyParser(&rq); err != nil {
-		fmt.Println("parser Error")
-		return err
+	rqDto := dto_api_request.NewRequestBalanceDto()
+	res, errB := rqDto.BindDataDto(c)
+	if errB != nil {
+		return res.Response(c)
 	}
 
-	log.Printf("%#v\n", persons)
-	// []main.Person{main.Person{Name:"john", Pass:"doe"}, main.Person{Name:"jack", Pass:"jill"}}
-	return c.SendString("Post Called")
-	//https://stackoverflow.com/questions/71934014/how-to-parse-post-request-body-with-arbitrary-number-of-parameters-in-go-fiber
+	validate := validate_api.ValidateApiRequestBalance{
+		VB:  validate_base.NewBaseValidate(),
+		Dto: *rqDto,
+	}
+
+	validate.Init()
+	resV, errV := validate.Validate()
+	if errV != nil {
+		return resV.Response(c)
+	}
+
+	bRequest := application.BalanceRequest{
+		BRequest: calculator.BalancerRequest{
+			AmountRequest:         rqDto.AmountRequest,
+			PartnerCode:           rqDto.PartnerCode,
+			PartnerIdentification: rqDto.PartnerIdentification,
+			OrderID:               rqDto.OrderID,
+			TypeRequest:           rqDto.TypeRequest,
+		},
+	}
+	rs, ErrorHRB := r.sv.HandleRequestBalance(bRequest)
+
+	resProcess := dto_api_response.NewResponseRequestBalanceDto()
+	resProcess.MappingFrServiceRequestBalanceResponse(rs, ErrorHRB)
+	return resProcess.Response(c)
 }
 
 func (r *RequestBalance) TransferToResponseHttp(resRB respone_request_balance.RequestBalanceResponse) RequestBalanceResponse {
 	switch resRB.Status {
-	case respone_request_balance.SUCCESS_STATUS:
+	case respone_request_balance.STATUS_SUCCESS:
 		return r.ResponseSuccess(resRB)
 	default:
 		return r.ResponseErrorDefault(resRB)

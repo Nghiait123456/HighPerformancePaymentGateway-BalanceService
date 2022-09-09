@@ -17,7 +17,7 @@ type (
 
 	ValidateBaseInterface interface {
 		ResignValidateCustom(ruleNameCustom string, vc ValidateCustom)
-		ConvertErrorValidate(err error) (error, MessageErrors)
+		ConvertErrorValidate(err error) (MessageErrors, error)
 		ShowErrors(m MessageErrors, s ShowError) (error, interface{})
 		SetMessageForRule(m MapMessage)
 		Validate() *validator.Validate
@@ -26,11 +26,11 @@ type (
 	}
 )
 
-func (v *ValidateBase) ConvertErrorValidate(err error) (error, MessageErrors) {
+func (v *ValidateBase) ConvertErrorValidate(err error) (MessageErrors, error) {
 	MessageErrors := make(MessageErrors)
 
 	if errIVE, ok := err.(*validator.InvalidValidationError); ok {
-		return errIVE, MessageErrors
+		return MessageErrors, errIVE
 	}
 
 	for _, errV := range err.(validator.ValidationErrors) {
@@ -52,7 +52,7 @@ func (v *ValidateBase) ConvertErrorValidate(err error) (error, MessageErrors) {
 		MessageErrors[errV.StructField()] = eb
 	}
 
-	return nil, MessageErrors
+	return MessageErrors, nil
 }
 
 func (v *ValidateBase) ResignValidateCustom(ruleNameCustom string, vc ValidateCustom) {

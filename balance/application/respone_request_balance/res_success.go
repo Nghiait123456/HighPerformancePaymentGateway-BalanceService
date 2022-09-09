@@ -7,7 +7,7 @@ const (
 
 func SuccessBalanceResponse() RequestBalanceResponse {
 	return RequestBalanceResponse{
-		Status:  ERR_STATUS,
+		Status:  STATUS_ERROR,
 		Code:    CODE_SUCCESS,
 		Message: MESSAGE_SUCCESS,
 	}

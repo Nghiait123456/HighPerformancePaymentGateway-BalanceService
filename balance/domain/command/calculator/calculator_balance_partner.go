@@ -18,10 +18,10 @@ type (
 	BalancerRequest struct {
 		AmountRequest         uint64
 		PartnerCode           string
-		partnerIdentification uint
-		orderID               uint64
+		PartnerIdentification uint
+		OrderID               uint64
 		// create order, update amount when partner recharge
-		typeRequest string
+		TypeRequest string
 	}
 
 	partnerBalance struct {
@@ -84,7 +84,7 @@ func (pB *partnerBalance) isValidAmount() bool {
 }
 
 func (pB *partnerBalance) isApproveOrder(b BalancerRequest) (bool, error) {
-	switch b.typeRequest {
+	switch b.TypeRequest {
 	case typeRequestPayment:
 		if b.AmountRequest+pB.amountPlaceHolder <= pB.balance {
 			return true, nil
@@ -96,7 +96,7 @@ func (pB *partnerBalance) isApproveOrder(b BalancerRequest) (bool, error) {
 
 	default:
 		log.WithFields(log.Fields{
-			"typeRequest": b.typeRequest,
+			"typeRequest": b.TypeRequest,
 		}).Error("type request balance is not valid")
 		return false, err_handle_request_balance.NewErrorTypeRequestBalanceNotValid()
 	}
@@ -284,47 +284,47 @@ func (pB *partnerBalance) saveTypeRequestRecharge(s saveLogsDB) (bool, error) {
 }
 
 func (pB *partnerBalance) updateRequestApprovedLocalInMemory(b BalancerRequest) {
-	switch b.typeRequest {
+	switch b.TypeRequest {
 	case typeRequestPayment:
 		pB.updateTypeRequestPaymentLocalInMemory(b)
 	case typeRequestRecharge:
 		pB.updateTypeRequestRechargeLocalInMemory(b)
 
 	default:
-		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.TypeRequest)
 		panic(err)
 	}
 }
 
 func (pB *partnerBalance) revertRequestApprovedLocalInMemory(b BalancerRequest) error {
-	switch b.typeRequest {
+	switch b.TypeRequest {
 	case typeRequestPayment:
 		return pB.revertTypeRequestPaymentLocalInMemory(b)
 	case typeRequestRecharge:
 		return pB.revertTypeRequestRechargeLocalInMemory(b)
 
 	default:
-		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.typeRequest)
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", b.TypeRequest)
 		panic(err)
 	}
 }
 
 func (pB *partnerBalance) saveRequestApproved(s saveLogsDB) (bool, error) {
-	switch s.b.typeRequest {
+	switch s.b.TypeRequest {
 	case typeRequestPayment:
 		return pB.saveTypeRequestPayment(s)
 	case typeRequestRecharge:
 		return pB.saveTypeRequestRecharge(s)
 
 	default:
-		err := fmt.Sprintf("typeRequest %s to balancer service not exits", s.b.typeRequest)
+		err := fmt.Sprintf("typeRequest %s to balancer service not exits", s.b.TypeRequest)
 		panic(err)
 	}
 }
 
 func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
 	o := logs_request_balance.OrderLog{
-		OrderId: s.b.orderID,
+		OrderId: s.b.OrderID,
 		Amount:  s.b.AmountRequest,
 		Status:  "processing",
 	}
@@ -340,7 +340,7 @@ func (pB *partnerBalance) saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error
 	rp := repository.NewBalanceAndBalanceRequestLogRepository()
 
 	// BalanceRechargeLog
-	brl.OrderId = s.b.orderID
+	brl.OrderId = s.b.OrderID
 	brl.PartnerCode = s.b.PartnerCode
 	brl.AmountRecharge = s.b.AmountRequest
 	brl.Balance = s.pb.balance

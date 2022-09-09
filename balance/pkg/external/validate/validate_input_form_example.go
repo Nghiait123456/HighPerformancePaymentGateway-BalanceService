@@ -49,7 +49,7 @@ func Example() {
 		fmt.Println("dont have error")
 	}
 
-	errCv, messageErr := v.ConvertErrorValidate(err)
+	messageErr, errCv := v.ConvertErrorValidate(err)
 	if errCv != nil {
 		fmt.Println("ConvertErrorValidate error")
 	} else {
@@ -57,7 +57,7 @@ func Example() {
 		if errS != nil {
 			fmt.Println("ShowErrors error")
 		} else {
-			fmt.Println(fmt.Sprintf("ShowErrors success, error %s", Message))
+			fmt.Println(fmt.Sprintf("ShowErrors success, error %v", Message))
 		}
 	}
 }
