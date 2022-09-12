@@ -6,12 +6,15 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
+	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
 	"os"
 )
 
 func handle(c *fiber.Ctx) error {
+	panic("have error")
+	return fiber.NewError(500, "have eror")
 	return c.SendString("Hello, World!")
 }
 
@@ -26,36 +29,65 @@ func main() {
 		TypeOutput: log_init.TYPE_OUTPUT_FILE,
 		LinkFile:   "balance/infrastructure/log/log_file/log.log",
 	})
+	//
+	//gCf := TestEnvGlobal()
+	//TestAutoChangeSecret(gCf.AuthInternalServiceConfig())
 
-	gCf := TestEnvGlobal()
-	TestAutoChangeSecret(gCf.AuthInternalServiceConfig())
-
-	app := fiber.New()
-
-	app.Get("/", handle)
-
-	app.Post("/", func(c *fiber.Ctx) error {
-		fmt.Printf("have error %s \n", "hahaha")
-		persons := Person{}
-		//fmt.Println(fmt.Sprintf("all Param, %v ",c.FormValue("pass", "zzz"))
-
-		if err := c.BodyParser(&persons); err != nil {
-			fmt.Println(fmt.Sprintf("have error %s", err.Error()))
-		} else {
-			//fmt.Printf("success %v %v %v \n", persons, reflect.TypeOf(persons.Name), reflect.TypeOf(persons.Pass))
-		}
-
-		return c.JSON(persons)
+	// Create a new fiber instance with custom config
+	app := fiber.New(fiber.Config{
+		// Override default error handler
+		ErrorHandler: error_handle.CustomMessageError,
 	})
 
-	//fmt.Printf("error %v \n", persons)
-	//return c.SendString("Post Cancel")
-	// []main.Person{main.Person{Name:"john", Pass:"doe"}, main.Person{Name:"jack", Pass:"jill"}}
+	//config error handle
+	eH := error_handle.ErrorHandle{
+		App: app,
+	}
+	eH.Init()
 
-	//TestValidate()
-	validate.Example()
+	// config alert panic notify
+	alertAc := error_handle.AlertAc{
+		Dsn:              "https://4ea29cdaaa424266a113571ac407c88a@o1406092.ingest.sentry.io/6739879",
+		Repanic:          true,
+		Debug:            true,
+		AttachStacktrace: true,
+	}
+	alertPanic := error_handle.NewPanicHandle(&alertAc, app)
+	alertPanic.Init()
 
-	app.Listen(":3000")
+	//app.Use(fibersentry.New(fibersentry.Config{
+	//	Repanic:         true,
+	//	WaitForDelivery: true,
+	//}))
+	//
+	//enhanceSentryEvent := func(c *fiber.Ctx) error {
+	//	if hub := fibersentry.GetHubFromContext(c); hub != nil {
+	//		hub.Scope().SetTag("someRandomTag", "maybeYouNeedIt")
+	//	}
+	//	return c.Next()
+	//}
+
+	app.Get("/panic", func(c *fiber.Ctx) error {
+		panic("panic0999hbhbhb" + "333333333333333333333")
+	})
+
+	//app.All("/", func(c *fiber.Ctx) error {
+	//	if hub := fibersentry.GetHubFromContext(c); hub != nil {
+	//		hub.WithScope(func(scope *sentry.Scope) {
+	//			scope.SetExtra("unwantedQuery", "someQueryDataMaybe")
+	//			hub.CaptureMessage("User provided unwanted query string, but we recovered just fine")
+	//		})
+	//	}
+	//	return c.SendStatus(fiber.StatusOK)
+	//})
+
+	errApp := app.Listen(":3000")
+	if errApp != nil {
+		errMApp := fmt.Sprintf("Init app error, message: %s", errApp.Error())
+		panic(errMApp)
+		os.Exit(0)
+	}
+
 }
 
 func response(c *fiber.Ctx) error {
