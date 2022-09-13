@@ -27,6 +27,8 @@ func (l *LocalInMemory) Init(defaultExpiration, cleanupInterval time.Duration) {
 	l.cache = cache.New(defaultExpiration, cleanupInterval)
 }
 
-func NewLocalInMemory() LocalInMemoryInterface {
-	return &LocalInMemory{}
+func NewLocalInMemory(cache *cache.Cache) LocalInMemoryInterface {
+	return &LocalInMemory{
+		cache: cache,
+	}
 }

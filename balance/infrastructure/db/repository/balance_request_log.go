@@ -14,6 +14,7 @@ type (
 
 	BalanceRequestLogInterface interface {
 		SetConnect(cn sql.Connect)
+		GetConnectFrGlobalCf() sql.Connect
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
@@ -46,6 +47,12 @@ func (rp *BalanceRequestLog) GetById(id uint32) (orm.BalanceRequestLog, error) {
 
 func (rp *BalanceRequestLog) SetConnect(cn sql.Connect) {
 	rp.BaseRepo.SetConnect(cn)
+}
+
+func (rp BalanceRequestLog) GetConnectFrGlobalCf() sql.Connect {
+	//todo get connect from global config
+	var cn sql.Connect
+	return cn
 }
 
 func (rp BalanceRequestLog) DB() sql.Connect {
@@ -146,5 +153,7 @@ func (rp *BalanceRequestLog) ResetContext() {
 }
 
 func NewBalanceLogRepository() BalanceRequestLogInterface {
-	return &BalanceRequestLog{}
+	rp := BalanceRequestLog{}
+	rp.SetConnect(rp.GetConnectFrGlobalCf())
+	return &rp
 }

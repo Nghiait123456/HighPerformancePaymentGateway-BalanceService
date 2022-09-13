@@ -15,6 +15,7 @@ type (
 
 	PartnerBalanceShardInterface interface {
 		SetConnect(cn sql.Connect)
+		GetConnectFrGlobalCf() sql.Connect
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
@@ -30,6 +31,12 @@ type (
 
 func (rp *PartnerBalanceShard) SetConnect(cn sql.Connect) {
 	rp.BaseRepo.SetConnect(cn)
+}
+
+func (rp PartnerBalanceShard) GetConnectFrGlobalCf() sql.Connect {
+	//todo get connect from global config
+	var cn sql.Connect
+	return cn
 }
 
 func (rp PartnerBalanceShard) DB() sql.Connect {
@@ -130,5 +137,7 @@ func (rp *PartnerBalanceShard) ResetContext() {
 }
 
 func NewPartnerBalanceShardRepository() PartnerBalanceShardInterface {
-	return &PartnerBalanceShard{}
+	rp := PartnerBalanceShard{}
+	rp.SetConnect(rp.GetConnectFrGlobalCf())
+	return &rp
 }

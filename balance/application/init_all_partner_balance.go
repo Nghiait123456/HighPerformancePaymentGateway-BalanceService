@@ -44,3 +44,10 @@ func (a *AllPartnerBalance) HandleRequestBalance(b BalanceRequest) (bool, respon
 	a.QueueJob.Push(b.BRequest)
 	return true, respone_request_balance.SuccessBalanceResponse()
 }
+
+func NewAllPartnerBalance(allPartner calculator.AllPartnerInterface, queueJob queue_job_request.QueueJobInterface) AllPartnerBalanceInterface {
+	return &AllPartnerBalance{
+		AllPartner: allPartner,
+		QueueJob:   queueJob,
+	}
+}

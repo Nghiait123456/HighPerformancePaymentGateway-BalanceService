@@ -93,5 +93,6 @@ func (b *Base) GetCancelFc() context.CancelFunc {
 }
 
 func NewBaseRepository() BaseInterface {
-	return &Base{}
+	rp := Base{}
+	return &rp
 }

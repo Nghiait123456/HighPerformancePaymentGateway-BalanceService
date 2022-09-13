@@ -26,7 +26,7 @@ type (
 		Init()
 		Push(o OrderLog)
 		saveLogs() error
-		sendLogsToServiceSave(s *SendLogsToOtherService) error
+		sendLogsToServiceSave(s SendLogsToOtherService) error
 	}
 
 	SendLogsToOtherService struct {
@@ -42,7 +42,7 @@ const (
 	MAX_RETRY_SEND_LOGS                        = 5
 )
 
-func (l *Logs) Init(o OrderLog) {
+func (l *Logs) Init() {
 	l.allLog = make(LogsChan)
 	l.maxNumberMustSaveLog = MAXIMUM_LOG_MUST_SAVE_LOG_TO_OTHER_SERVICE
 	l.maxRangeTimeAllowTwoTimesUpdate = MAX_DISTANCE_TIME_FOR_TWO_TIMES_UPDATE
@@ -112,4 +112,10 @@ func (l *Logs) sendLogsToServiceSave(s SendLogsToOtherService) error {
 	}
 
 	return errors.New("don't send logs to save service")
+}
+
+func NewLog() LogsInterface {
+	l := Logs{}
+	l.Init()
+	return &l
 }

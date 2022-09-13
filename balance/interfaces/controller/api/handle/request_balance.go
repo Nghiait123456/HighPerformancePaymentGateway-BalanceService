@@ -91,3 +91,9 @@ func (r RequestBalance) ResponseErrorDefault(resRB respone_request_balance.Reque
 		Message:    resRB.Message,
 	}
 }
+
+func NewRequestBalance(sv application.ServiceInterface) *RequestBalance {
+	return &RequestBalance{
+		sv: sv,
+	}
+}

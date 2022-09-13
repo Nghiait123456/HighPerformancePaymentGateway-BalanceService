@@ -16,6 +16,6 @@ func (s *Service) HandleRequestBalance(b BalanceRequest) (bool, respone_request_
 	return s.allP.HandleRequestBalance(b)
 }
 
-func NewService() ServiceInterface {
-	return &Service{}
+func NewService(allP AllPartnerBalanceInterface) ServiceInterface {
+	return &Service{allP: allP}
 }

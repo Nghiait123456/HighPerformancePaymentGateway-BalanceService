@@ -14,19 +14,21 @@ all information partner for calculator balance
 
 type (
 	AllPartner struct {
-		allPartner        map[string]partnerBalance
+		allPartner        PartnersBalance
 		muLock            sync.Mutex
 		cnRechargeLog     sql.Connect
 		cnBalance         sql.Connect
 		logRequestBalance logs_request_balance.LogsInterface
 	}
 
+	PartnersBalance map[string]partnerBalance
+
 	AllPartnerInterface interface {
 		initPartnersInterface
 	}
 
 	initPartnersInterface interface {
-		LoadAllPartnerInfo() (map[string]partnerBalance, error)
+		LoadAllPartnerInfo() (PartnersBalance, error)
 		InitAllPartnerInfo() error
 		UpdateOnePartner(p partnerBalance) error
 		GetOnePartner(partnerCode string) (partnerBalance, error)
@@ -34,8 +36,8 @@ type (
 	}
 )
 
-func (allP *AllPartner) LoadAllPartnerInfo() (map[string]partnerBalance, error) {
-	fake := make(map[string]partnerBalance)
+func (allP *AllPartner) LoadAllPartnerInfo() (PartnersBalance, error) {
+	fake := make(PartnersBalance)
 	//todo get indexLogRequestLatest from DB and update to
 	fake["partner_test"] = partnerBalance{
 		partnerCode:           "partner_test",
@@ -112,4 +114,13 @@ func InitAllPartnerData() AllPartnerInterface {
 	}
 
 	return &allPartner
+}
+
+func NewAllPartner(allPartner PartnersBalance, cnRechargeLog sql.Connect, cnBalance sql.Connect, logRequestBalance logs_request_balance.LogsInterface) AllPartnerInterface {
+	return &AllPartner{
+		allPartner:        allPartner,
+		cnRechargeLog:     cnRechargeLog,
+		cnBalance:         cnBalance,
+		logRequestBalance: logRequestBalance,
+	}
 }

@@ -26,6 +26,7 @@ type (
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
+		GetConnectFrGlobalCf() sql.Connect
 		ResetContext()
 		GetById(id uint32) (orm.Balance, error)
 		GetByPartnerCode(partnerCode string) (orm.Balance, error)
@@ -40,6 +41,12 @@ type (
 
 func (rp *Balance) SetConnect(cn sql.Connect) {
 	rp.BaseRepo.SetConnect(cn)
+}
+
+func (rp Balance) GetConnectFrGlobalCf() sql.Connect {
+	//todo get connect from global config
+	var cn sql.Connect
+	return cn
 }
 
 func (rp Balance) DB() sql.Connect {
@@ -216,5 +223,7 @@ func (rp *Balance) ResetContext() {
 }
 
 func NewBalanceRepository() BalanceInterface {
-	return &Balance{}
+	b := Balance{}
+	b.SetConnect(b.GetConnectFrGlobalCf())
+	return &b
 }

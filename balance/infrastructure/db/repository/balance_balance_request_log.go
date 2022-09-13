@@ -25,6 +25,7 @@ type (
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
+		GetConnectFrGlobalCf() sql.Connect
 		ResetContext()
 		SaveLogsAndUpdateBalanceReChargeDB(u UpdateLogsAndBalance) error
 	}
@@ -60,6 +61,12 @@ func (rp *BalanceAndBalanceRequestLog) SetConnect(cn sql.Connect) {
 	rp.BaseRepo.SetConnect(cn)
 }
 
+func (rp BalanceAndBalanceRequestLog) GetConnectFrGlobalCf() sql.Connect {
+	//todo get connect from global config
+	var cn sql.Connect
+	return cn
+}
+
 func (rp BalanceAndBalanceRequestLog) DB() sql.Connect {
 	return rp.BaseRepo.CN()
 }
@@ -85,5 +92,10 @@ func (rp *BalanceAndBalanceRequestLog) ResetContext() {
 }
 
 func NewBalanceAndBalanceRequestLogRepository() BalanceAndBalanceRequestLogInterface {
-	return &BalanceAndBalanceRequestLog{}
+	b := BalanceAndBalanceRequestLog{
+		BaseRepo: NewBaseRepository(),
+	}
+	b.SetConnect(b.GetConnectFrGlobalCf())
+
+	return &b
 }
