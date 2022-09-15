@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/logs_request_balance"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
+	log "github.com/sirupsen/logrus"
 	"sync"
+	"time"
 )
 
 /**
@@ -46,9 +48,18 @@ func (allP *AllPartner) LoadAllPartnerInfo() (PartnersBalance, error) {
 		partnerName:           "TEST",
 		partnerIdentification: 1,
 		balance:               1000000,
-		amountPlaceHolder:     4,
-		status:                "active",
-		muLock:                sync.Mutex{},
+		amountPlaceHolder:     0,
+		cnRechargeLog:         allP.cnRechargeLog,
+		cnBalance:             allP.cnBalance,
+		logRequestBalance:     allP.logRequestBalance,
+	}
+
+	fake["TEST1"] = partnerBalance{
+		partnerCode:           "TEST1",
+		partnerName:           "TEST1",
+		partnerIdentification: 1,
+		balance:               1000000,
+		amountPlaceHolder:     0,
 		cnRechargeLog:         allP.cnRechargeLog,
 		cnBalance:             allP.cnBalance,
 		logRequestBalance:     allP.logRequestBalance,
@@ -83,14 +94,39 @@ func (allP *AllPartner) InitAllPartnerInfo() error {
 	}
 
 	allP.muLock.Unlock()
+	allP.dumpAllPartnerInfo()
 
 	return nil
 }
 
+func (allP *AllPartner) dumpAllPartnerInfo() {
+	go func() {
+		for {
+			startTimeShow := "-------------------------------- start times show -----------------------------------------------------------------------------"
+			fmt.Println(startTimeShow)
+			log.Info(startTimeShow)
+
+			for _, v := range allP.allPartner {
+				show := fmt.Sprintf("partnerCode: %s, amount: %d , amountPlaceHolder: %d", v.partnerCode, v.balance, v.amountPlaceHolder)
+				fmt.Println(show)
+				log.Info(show)
+			}
+
+			endTimeShow := "############################################### end times show ###################################################################"
+			fmt.Println(endTimeShow)
+			log.Info(endTimeShow)
+			time.Sleep(5000 * time.Millisecond)
+		}
+	}()
+}
+
 func (allP *AllPartner) UpdateOnePartner(p partnerBalance) error {
-	p.muLock.Lock()
+	//p.muLock.Lock()
+	//defer p.muLock.Unlock()
+
 	key := allP.getKeyOnePartner(p)
 	allP.allPartner[key] = p
+
 	return nil
 }
 

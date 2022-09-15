@@ -51,6 +51,7 @@ func (q *QueueJob) AutoHandleRequest() {
 				break
 			}
 
+			q.AllPartner.UpdateOnePartner(pn)
 			// todo push error, push even, log success
 		}
 	}

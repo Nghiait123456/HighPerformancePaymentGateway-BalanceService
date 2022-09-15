@@ -11,7 +11,6 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/value_object"
 	log "github.com/sirupsen/logrus"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -34,8 +33,8 @@ type (
 		amountPlaceHolder     uint64
 		indexLogRequestLatest uint64
 		status                string
-		muLock                sync.Mutex
-		EStop                 emergencyStop
+		//muLock                sync.Mutex
+		//EStop emergencyStop
 		//lbShardBalanceLog     shard_balance_logs.LBShardLogInterface
 		cnRechargeLog     sql.Connect
 		cnBalance         sql.Connect
@@ -158,15 +157,8 @@ func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint64) error 
 
 // HandleOneRequestBalance is endpoint call check all process
 func (pB *partnerBalance) HandleOneRequestBalance(b BalancerRequest) (bool, error) {
-	pB.muLock.Lock()
-	defer pB.muLock.Unlock()
-
-	if pB.EStop.IsStop() {
-		return false, err_handle_request_balance.NewErrorPartnerStoppingForEmergenceStop()
-	}
-
 	if pB.isFull() {
-		return false, err_handle_request_balance.NewErrorPartnerStoppingForEmergenceStop()
+		return false, err_handle_request_balance.NewErrorBalanceIsFull()
 	}
 
 	if !pB.isValidAmount() {
@@ -180,7 +172,6 @@ func (pB *partnerBalance) HandleOneRequestBalance(b BalancerRequest) (bool, erro
 
 	//update to local in memory
 	pB.updateRequestApprovedLocalInMemory(b)
-
 	saveLogsDB := saveLogsDB{
 		b:  b,
 		pb: pB.ValueObject(),
