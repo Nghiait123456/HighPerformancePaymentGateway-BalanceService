@@ -10,14 +10,14 @@ func NewPartnersBalance() PartnersBalance {
 	return make(PartnersBalance)
 }
 
-func InstanceCnRechargeLogs() sql.Connect {
-	// todo get from globle config
+func InstanceCnRechargeLogs() CnRechargeLog {
+	//todo get from globle config
 	var temp sql.Connect
 	return temp
 }
 
-func InstanceCnBalance() sql.Connect {
-	// todo get from globle config
+func InstanceCnBalance() CnBalance {
+	//todo get from globle config
 	var temp sql.Connect
 	return temp
 }
@@ -26,7 +26,7 @@ var ProviderAllPartner = wire.NewSet(
 	NewAllPartner,
 	NewPartnersBalance,
 	InstanceCnRechargeLogs,
-	InstanceCnBalance(),
+	InstanceCnBalance,
 	logs_request_balance.NewLog,
 	wire.Bind(new(AllPartnerInterface), new(*AllPartner)),
 )

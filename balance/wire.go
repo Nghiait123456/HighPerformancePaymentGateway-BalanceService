@@ -1,26 +1,17 @@
 //go:build wireinject
 // +build wireinject
 
-package main
+package balance
 
 import (
 	"github.com/google/wire"
-	"wire_best_practice/b"
-	"wire_best_practice/c"
+	"github.com/high-performance-payment-gateway/balance-service/balance/application"
 )
 
-func ProviderB() (b.BInterface, error) {
+func ProviderService() application.ServiceInterface {
 	wire.Build(
-		b.ProviderB,
+		application.ProviderService,
 	)
 
-	return &b.B{}, nil
-}
-
-func ProviderC() (c.CInterface, error) {
-	wire.Build(
-		c.ProviderC,
-	)
-
-	return &c.C{}, nil
+	return &application.Service{}
 }

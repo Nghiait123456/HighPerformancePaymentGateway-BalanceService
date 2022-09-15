@@ -8,6 +8,7 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
+	"github.com/high-performance-payment-gateway/balance-service/balance/value_object"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
@@ -19,11 +20,12 @@ type (
 		AmountRequest         uint64
 		PartnerCode           string
 		PartnerIdentification uint
-		OrderID               uint64
+		OrderID               OrderID
 		// create order, update amount when partner recharge
 		TypeRequest string
 	}
 
+	OrderID        = uint64
 	partnerBalance struct {
 		partnerCode           string
 		partnerName           string
@@ -71,9 +73,19 @@ type (
 )
 
 var (
-	typeRequestPayment  = "payment"
-	typeRequestRecharge = "recharge"
+	typeRequestPayment  = TypeRequestPayment()
+	typeRequestRecharge = TypeRequestRecharge()
 )
+
+func TypeRequestPayment() string {
+	v := value_object.NewTypeRequestBalance()
+	return v.RequestPayment
+}
+
+func TypeRequestRecharge() string {
+	v := value_object.NewTypeRequestBalance()
+	return v.RequestRecharge
+}
 
 func (pB *partnerBalance) isFull() bool {
 	return pB.balance == pB.amountPlaceHolder

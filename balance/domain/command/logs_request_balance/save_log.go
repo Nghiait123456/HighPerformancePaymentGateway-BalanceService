@@ -1,7 +1,6 @@
 package logs_request_balance
 
 import (
-	"errors"
 	"math/rand"
 	"os"
 	"time"
@@ -111,7 +110,7 @@ func (l *Logs) sendLogsToServiceSave(s SendLogsToOtherService) error {
 		// todo sleep x ms if send fail
 	}
 
-	return errors.New("don't send logs to save service")
+	return nil
 }
 
 func NewLog() LogsInterface {

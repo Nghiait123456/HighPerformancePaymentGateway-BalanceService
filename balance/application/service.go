@@ -12,10 +12,15 @@ func (s *Service) Init() {
 	s.allP.Init()
 }
 
-func (s *Service) HandleRequestBalance(b BalanceRequest) (bool, respone_request_balance.RequestBalanceResponse) {
-	return s.allP.HandleRequestBalance(b)
+func (s *Service) HandleOneRequestBalance(b BalanceRequest) (respone_request_balance.RequestBalanceResponse, bool) {
+	return s.allP.HandleOneRequestBalance(b)
 }
 
-func NewService(allP AllPartnerBalanceInterface) ServiceInterface {
+func (s *Service) HandleGroupRequestBalance(gb GroupBalanceRequest) (respone_request_balance.RequestBalanceResponse, DetailResultGroupRequest, bool) {
+	return s.allP.HandleGroupRequestBalance(gb)
+}
+
+func NewService(allP AllPartnerBalanceInterface) *Service {
+	var _ ServiceInterface = (*Service)(nil)
 	return &Service{allP: allP}
 }

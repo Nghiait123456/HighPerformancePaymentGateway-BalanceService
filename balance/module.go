@@ -1,10 +1,13 @@
 package balance
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/high-performance-payment-gateway/balance-service/balance/application"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/server/web_server"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/api/handle"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
+	"os"
 )
 
 /**
@@ -15,6 +18,7 @@ type (
 	Module struct {
 		HttpServer web_server.HttpServer
 		RouterHttp *Routes
+		Service    application.ServiceInterface
 		// todo other config
 		// global value
 	}
@@ -33,12 +37,13 @@ type (
 )
 
 func (m *Module) ResignRoutes() {
-
+	m.ResignApi()
 }
 
 func (m *Module) Inject() {
 	m.HttpServer = m.NewWebServer()
-
+	m.Service = ForwardProviderService()
+	m.RouterHttp = m.NewRouter()
 }
 
 func (m Module) NewWebServer() web_server.HttpServer {
@@ -70,16 +75,50 @@ func (m *Module) ResignApi() {
 	m.HttpServer.Post("/request-balance", m.RouterHttp.apiController.HandleOneRequestBalance)
 }
 
-func (m *Module) Init() {
-	m.Inject()
-	m.ResignRoutes()
-	m.ResignApi()
+func (m *Module) StartWebServer() {
+	errApp := m.HttpServer.Listen(":3000")
+	if errApp != nil {
+		errMApp := fmt.Sprintf("Init app error, message: %s", errApp.Error())
+		panic(errMApp)
+		os.Exit(0)
+	}
 }
 
-func NewModule(httpServer web_server.HttpServer, routerHttp *Routes) *Module {
+func (m *Module) Init() {
+	m.Inject()
+	m.InitService()
+	m.ResignRoutes()
+}
+
+func (m *Module) InitService() {
+	m.Service.Init()
+}
+
+func (m *Module) NewRouter() *Routes {
+	r := Routes{
+		viewController: nil,
+		apiController:  handle.NewRequestBalance(m.Service),
+	}
+
+	return &r
+}
+
+//call if use micro service, one project use one module
+//if in monothic, custom  param pass to Init() and run all modul in main.go
+func (m *Module) Start() {
+	m.StartWebServer()
+}
+
+func NewModule() *Module {
 	var _ ModuleInterface = (*Module)(nil)
-	return &Module{
-		HttpServer: httpServer,
-		RouterHttp: routerHttp,
+	m := Module{}
+	m.Init()
+	return &m
+}
+
+func NewRouter(viewController any, apiController *handle.RequestBalance) *Routes {
+	return &Routes{
+		viewController: viewController,
+		apiController:  apiController,
 	}
 }

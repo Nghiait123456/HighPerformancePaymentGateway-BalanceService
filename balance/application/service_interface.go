@@ -5,6 +5,7 @@ import "github.com/high-performance-payment-gateway/balance-service/balance/appl
 type (
 	ServiceInterface interface {
 		Init()
-		HandleRequestBalance(b BalanceRequest) (bool, respone_request_balance.RequestBalanceResponse)
+		HandleOneRequestBalance(b BalanceRequest) (respone_request_balance.RequestBalanceResponse, bool)
+		HandleGroupRequestBalance(gb GroupBalanceRequest) (respone_request_balance.RequestBalanceResponse, DetailResultGroupRequest, bool)
 	}
 )

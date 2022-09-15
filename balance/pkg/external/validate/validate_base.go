@@ -27,10 +27,10 @@ type (
 )
 
 func (v *ValidateBase) ConvertErrorValidate(err error) (MessageErrors, error) {
-	MessageErrors := make(MessageErrors)
+	mErrors := make(MessageErrors)
 
 	if errIVE, ok := err.(*validator.InvalidValidationError); ok {
-		return MessageErrors, errIVE
+		return mErrors, errIVE
 	}
 
 	for _, errV := range err.(validator.ValidationErrors) {
@@ -49,10 +49,10 @@ func (v *ValidateBase) ConvertErrorValidate(err error) (MessageErrors, error) {
 			Raw:        errV,
 		}
 
-		MessageErrors[errV.StructField()] = eb
+		mErrors[errV.StructField()] = eb
 	}
 
-	return MessageErrors, nil
+	return mErrors, nil
 }
 
 func (v *ValidateBase) ResignValidateCustom(ruleNameCustom string, vc ValidateCustom) {

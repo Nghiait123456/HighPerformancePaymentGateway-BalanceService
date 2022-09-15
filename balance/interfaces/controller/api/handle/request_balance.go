@@ -25,12 +25,6 @@ type (
 	}
 )
 
-func (r *RequestBalance) Inject(
-	sv application.ServiceInterface,
-) {
-	r.sv = sv
-}
-
 func (r *RequestBalance) HandleOneRequestBalance(c *fiber.Ctx) error {
 	rqDto := dto_api_request.NewRequestBalanceDto()
 	res, errB := rqDto.BindDataDto(c)
@@ -49,19 +43,23 @@ func (r *RequestBalance) HandleOneRequestBalance(c *fiber.Ctx) error {
 		return resV.Response(c)
 	}
 
-	bRequest := application.BalanceRequest{
-		BRequest: calculator.BalancerRequest{
-			AmountRequest:         rqDto.AmountRequest,
-			PartnerCode:           rqDto.PartnerCode,
-			PartnerIdentification: rqDto.PartnerIdentification,
-			OrderID:               rqDto.OrderID,
-			TypeRequest:           rqDto.TypeRequest,
-		},
-	}
-	rs, ErrorHRB := r.sv.HandleRequestBalance(bRequest)
+	gb := new(application.GroupBalanceRequest)
+	for _, v := range rqDto.Requests {
+		bRequest := calculator.BalancerRequest{
+			AmountRequest:         v.AmountRequest,
+			PartnerCode:           v.PartnerCode,
+			PartnerIdentification: v.PartnerIdentification,
+			OrderID:               v.OrderID,
+			TypeRequest:           v.TypeRequest,
+		}
 
+		gb.BRequest = append(gb.BRequest, bRequest)
+	}
+
+	resHGR, dtHGR, statusHGR := r.sv.HandleGroupRequestBalance(*gb)
 	resProcess := dto_api_response.NewResponseRequestBalanceDto()
-	resProcess.MappingFrServiceRequestBalanceResponse(rs, ErrorHRB)
+	resProcess.MappingFrServiceRequestBalanceResponse(dtHGR.ListRequestSuccess, resHGR, statusHGR)
+
 	return resProcess.Response(c)
 }
 

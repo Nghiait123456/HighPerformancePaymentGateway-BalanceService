@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	RequestBalanceDto struct {
+	OneRequestBalanceDto struct {
 		AmountRequest         uint64 `json:"AmountRequest" ml:"AmountRequest" form:"AmountRequest" validate:"required,minAmount,maxAmount"`
 		PartnerCode           string `json:"PartnerCode" ml:"PartnerCode" form:"PartnerCode" validate:"required,partnerExist,partnerActive"`
 		PartnerIdentification uint   `json:"PartnerIdentification" ml:"PartnerIdentification" form:"PartnerIdentification" validate:"required"`
@@ -17,13 +17,19 @@ type (
 		// create order, update amount when partner recharge
 		TypeRequest string `json:"TypeRequest" validate:"required,typeRequestExist"`
 	}
+	GroupRequestBalanceDto = []OneRequestBalanceDto
+
+	RequestBalanceDto struct {
+		Requests GroupRequestBalanceDto
+	}
 
 	RequestBalanceDtoInterface interface {
 	}
 )
 
 func (a *RequestBalanceDto) BindDataDto(c *fiber.Ctx) (dto_api_response.ResponseRequestBalanceDto, error) {
-	if errBP := c.BodyParser(&a); errBP != nil {
+	var g GroupRequestBalanceDto
+	if errBP := c.BodyParser(&g); errBP != nil {
 		res := dto_api_response.ResponseRequestBalanceDto{
 			HttpCode: http_status.StatusBadRequest,
 			Status:   dto_api_response.STATUS_ERROR,
@@ -40,6 +46,7 @@ func (a *RequestBalanceDto) BindDataDto(c *fiber.Ctx) (dto_api_response.Response
 		return res, errBP
 	}
 
+	a.Requests = g
 	return dto_api_response.ResponseRequestBalanceDto{}, nil
 }
 

@@ -119,7 +119,7 @@ I chose solution 2. The reasons I chose it:
 Characteristics of the number of partners < 10000 (this is a very large number, I need 2 parts). </br>
 1) Part one is the part of managing partner sharding, it will regulate and manage which partners + region exist on which sharding </br>
 2) Part two is the sharding data part, it will shard and contain balance partner information. Struct DB sharding requires enough basic fields, extension does not edit fields and adds data and extended json objects. This is an important thing with manual sharding systems. </br>
-3) Bottleneck about updating balance partner, I absolutely do not update to DB and do not use DB lock. The DB can only handle a small number of requests. I describe this issue in detail below. </br>
+3) Bottleneck about updating balance partner, I absolutely do not update to DB and do not use DB lock. The DB can only handle a small number of Requests. I describe this issue in detail below. </br>
 
 
 ## Why i don't use auto sharding <a name="WhyIDontUseAutoSharding"></a>
@@ -165,7 +165,7 @@ Here, each balance check or update order is inserted in a row to write the balan
 ## Detail process handle <a name="DetailProcessHandle"></a>
 1) Reset all variables of remote cache, load partner balance information from DB to remote cache </br>
 2) Load transaction not success information from logs to get the amount place holder. (All transactions stored in balance logs are processed trans) and stored in remote cache </br>
-3) Server handle requests will be pending until all data loads are done in cache. </br>
+3) Server handle Requests will be pending until all data loads are done in cache. </br>
 4) Once we have the latest information, we begin to calculate and process it as normal. </br>
 5) I left open the solution to move data from remote cache to cache local in memory for computation. Maybe in the future, I will use it to further optimize the calculation speed. </br>
 6) Every time a partner has place holder amount = total amount in DB, I will block that partner. A block variable will be set and released only when there is a change in the partner balance.
@@ -223,9 +223,9 @@ With billions of users online and getting data, the amount of qps can exceed the
 
 ## Problem overload request to DB when invalidate cache <a name="ProblemOverloadRequestToDBWhenInvalidateCache"></a>
 ![](img_readme/overload_cpu_when_invalidate_cache.png)
-With  data cache, when a cache invalidate, the common solution is to get and update the cache. At the breaking load threshold, this is fine. But at high load thresholds, there are cache keys that can make a large number of requests to a DB in a short time (until a new cache is available). It is DB overload. </br>
+With  data cache, when a cache invalidate, the common solution is to get and update the cache. At the breaking load threshold, this is fine. But at high load thresholds, there are cache keys that can make a large number of Requests to a DB in a short time (until a new cache is available). It is DB overload. </br>
 
-This is easy to imagine when you have 10000 get commands almost simultaneously into 1 key cache, at the same time that key cache invalidate. If handled in the usual way, you will almost have 10000 requests to the DB at the same time. </br>
+This is easy to imagine when you have 10000 get commands almost simultaneously into 1 key cache, at the same time that key cache invalidate. If handled in the usual way, you will almost have 10000 Requests to the DB at the same time. </br>
 
 
 
@@ -240,13 +240,13 @@ There exist 2 cases:
 2) Data not exits, call to update service and return the result. </br>
 
 ## Solution update cache <a name="SolutionUpdateCache"></a>
-Service update cache must ensure: there are 1000 requests to update cache with the same cache key at the same time, only process one request, only perform 1 process query to DB and update cache and return data for that request. Other requests will have to wait until the next query. </br>
+Service update cache must ensure: there are 1000 Requests to update cache with the same cache key at the same time, only process one request, only perform 1 process query to DB and update cache and return data for that request. Other Requests will have to wait until the next query. </br>
 
 In this problem, the number of race conditions is not large. With a large number of race conditions, service get cache and service update cache must be isolated. They just transmit data to each other via the message queue. </br>
 
 ## Solution only handle one request update cache for one key in race conditions <a name="SolutionOnlyHandleOneRequestUpdateCacheForOneKeyInRaceConditions"></a>
 ![](img_readme/race_condition_update_cache.png)
-I use mutext lock redis to handle it. With n update cache requests with 1 cache key, the first request to be handled will get the mutex and update the cache and return the result. Other requests will wait until the next update to get the latest results (at this point the cache is valid and the lock is also released). </br>
+I use mutext lock redis to handle it. With n update cache Requests with 1 cache key, the first request to be handled will get the mutex and update the cache and return the result. Other Requests will wait until the next update to get the latest results (at this point the cache is valid and the lock is also released). </br>
 
 ## Solution smart select DB <a name="SolutionSmartSelectDB"></a>
 I have designed:  order, log, balance DB success to be moved from mysql to cassandra. Besides, Cassandra has much better load capacity with mysql. The solution is simply to always prioritize the query in cassandra first, if not exists, switch the query to mysql. </br>
@@ -298,7 +298,7 @@ The foundation of this system: </br>
 Software define network + L4LB + L7LB + application backend </br>
 
 ## System rate limit <a name="SystemRateLimit"></a>
-Rate limit is a job with very simple logic but to have a good rate limit is not simple. A good rate limit is that the system, in addition to running the right features, also has an extremely high load capacity, most importantly when the request exceeds the system's processing threshold, absolutely no requests are allowed to enter the server. It will be sent into a black hole and destroyed in vain. Building such a system takes a lot of resources. A famous system can be said as the rate limit system of Cloudflare, AWS. I consider using these 3rd parties for rate limit. </br>
+Rate limit is a job with very simple logic but to have a good rate limit is not simple. A good rate limit is that the system, in addition to running the right features, also has an extremely high load capacity, most importantly when the request exceeds the system's processing threshold, absolutely no Requests are allowed to enter the server. It will be sent into a black hole and destroyed in vain. Building such a system takes a lot of resources. A famous system can be said as the rate limit system of Cloudflare, AWS. I consider using these 3rd parties for rate limit. </br>
 
 
 

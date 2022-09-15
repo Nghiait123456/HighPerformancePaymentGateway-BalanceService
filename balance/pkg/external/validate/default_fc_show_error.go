@@ -9,10 +9,12 @@ type (
 	}
 
 	OneErrorDefaultShow struct {
-		Field     string
-		Rule      string
-		Message   string
-		ParamRule string
+		Field      string
+		Rule       string
+		Message    string
+		ParamRule  string
+		ValueError any
+		Tag        string
 	}
 )
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/high-performance-payment-gateway/balance-service/balance"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
@@ -24,6 +25,15 @@ type Person struct {
 }
 
 func main() {
+	balanceModule := balance.NewModule()
+	balanceModule.Start()
+}
+
+func response(c *fiber.Ctx) error {
+	return c.SendString("Success !!!!!!!!!!!!!!!111")
+}
+
+func temp() {
 	log_init.Init(log_init.Log{
 		TypeFormat: log_init.TYPE_FORMAT_TEXT,
 		TypeOutput: log_init.TYPE_OUTPUT_FILE,
@@ -88,10 +98,6 @@ func main() {
 		os.Exit(0)
 	}
 
-}
-
-func response(c *fiber.Ctx) error {
-	return c.SendString("Success !!!!!!!!!!!!!!!111")
 }
 func TestJsonHamas() {
 	ListES := validate.ListErrorsDefaultShow{}

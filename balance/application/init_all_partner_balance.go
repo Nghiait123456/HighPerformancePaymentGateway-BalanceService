@@ -19,9 +19,19 @@ type (
 		BRequest calculator.BalancerRequest
 	}
 
+	GroupBalanceRequest struct {
+		BRequest           BGroupRequest
+		ListRequestSuccess ListRequestSuccess
+	}
+
+	BGroupRequest            = []calculator.BalancerRequest
+	ListRequestSuccess       = []calculator.BalancerRequest
+	DetailResultGroupRequest = GroupBalanceRequest
+
 	AllPartnerBalanceInterface interface {
 		Init() error
-		HandleRequestBalance(b BalanceRequest) (bool, respone_request_balance.RequestBalanceResponse)
+		HandleOneRequestBalance(b BalanceRequest) (respone_request_balance.RequestBalanceResponse, bool)
+		HandleGroupRequestBalance(gb GroupBalanceRequest) (respone_request_balance.RequestBalanceResponse, DetailResultGroupRequest, bool)
 	}
 )
 
@@ -40,12 +50,24 @@ func (a *AllPartnerBalance) Init() error {
 	return nil
 }
 
-func (a *AllPartnerBalance) HandleRequestBalance(b BalanceRequest) (bool, respone_request_balance.RequestBalanceResponse) {
+func (a *AllPartnerBalance) HandleOneRequestBalance(b BalanceRequest) (respone_request_balance.RequestBalanceResponse, bool) {
 	a.QueueJob.Push(b.BRequest)
-	return true, respone_request_balance.SuccessBalanceResponse()
+	return respone_request_balance.SuccessBalanceResponse(), true
 }
 
-func NewAllPartnerBalance(allPartner calculator.AllPartnerInterface, queueJob queue_job_request.QueueJobInterface) AllPartnerBalanceInterface {
+func (a *AllPartnerBalance) HandleGroupRequestBalance(gb GroupBalanceRequest) (respone_request_balance.RequestBalanceResponse, DetailResultGroupRequest, bool) {
+	//todo add timeout detect chan not work, handle it
+	for _, v := range gb.BRequest {
+		a.QueueJob.Push(v)
+		gb.ListRequestSuccess = append(gb.ListRequestSuccess, v)
+	}
+
+	detail := gb
+	return respone_request_balance.SuccessBalanceResponse(), detail, true
+}
+
+func NewAllPartnerBalance(allPartner calculator.AllPartnerInterface, queueJob queue_job_request.QueueJobInterface) *AllPartnerBalance {
+	var _ AllPartnerBalanceInterface = (*AllPartnerBalance)(nil)
 	return &AllPartnerBalance{
 		AllPartner: allPartner,
 		QueueJob:   queueJob,

@@ -1,12 +1,14 @@
 package validate
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_request"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_response"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/http/http_status"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
+	"github.com/high-performance-payment-gateway/balance-service/balance/value_object"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,6 +31,7 @@ func (v *ValidateApiRequestBalance) Init() {
 	v.VB.ResignValidateCustom("partnerActive", v.partnerActive)
 	v.VB.ResignValidateCustom("orderExist", v.orderExist)
 	v.VB.ResignValidateCustom("orderStatusValid", v.orderStatusValid)
+	v.VB.ResignValidateCustom("typeRequestExist", v.typeRequestExist)
 
 	message := make(validate.MapMessage)
 	message["minAmount"] = "Amount is less than min allow"
@@ -37,15 +40,32 @@ func (v *ValidateApiRequestBalance) Init() {
 	message["partnerActive"] = "Partner is not Active"
 	message["orderExist"] = "Order is not exist"
 	message["orderStatusValid"] = "Order status is not valid"
+	message["typeRequestExist"] = v.MessageErrorTypeRequestNotValid()
 	v.VB.SetMessageForRule(message)
 }
 
 // return struct response, error
 func (v *ValidateApiRequestBalance) Validate() (dto_api_response.ResponseRequestBalanceDto, error) {
 	errV := v.VB.Validate().Struct(v.Dto)
-	message, errCE := v.VB.ConvertErrorValidate(errV)
-	if errCE != nil {
-		errSE, Message := v.VB.ShowErrors(message, v.CustomShowError)
+	if errV != nil {
+		message, errCE := v.VB.ConvertErrorValidate(errV)
+		if errCE != nil {
+			fmt.Println("invalidate error")
+			res := dto_api_response.ResponseRequestBalanceDto{
+				HttpCode:    http_status.StatusBadRequest,
+				Status:      dto_api_response.STATUS_ERROR,
+				Code:        http_status.StatusBadRequest,
+				Message:     "Param is invalid format, please check and try again",
+				ErrorDetail: errV.Error(),
+			}
+			return res, errV
+		}
+
+		fmt.Println("message =", message)
+
+		// show message
+		errSE, detail := v.VB.ShowErrors(message, v.CustomShowError)
+		fmt.Println("detail =", detail)
 		if errSE != nil {
 			messageErr := fmt.Sprintf("ShowErrors validate error: %s", errSE.Error())
 			log.WithFields(log.Fields{
@@ -58,10 +78,12 @@ func (v *ValidateApiRequestBalance) Validate() (dto_api_response.ResponseRequest
 			HttpCode:    http_status.StatusBadRequest,
 			Status:      dto_api_response.STATUS_ERROR,
 			Code:        http_status.StatusBadRequest,
-			ErrorDetail: Message,
+			Message:     "Param missing or invalid format, please check and try again",
+			ErrorDetail: detail,
 		}
+		fmt.Println("res", res)
 
-		return res, errCE
+		return res, errors.New("Validate has errors")
 	}
 
 	return dto_api_response.ResponseRequestBalanceDto{}, nil
@@ -72,10 +94,11 @@ func (v ValidateApiRequestBalance) CustomShowError(mE validate.MessageErrors) (e
 
 	for _, v := range mE {
 		oneErr := validate.OneErrorDefaultShow{
-			Field:     v.Field,
-			Rule:      v.Rule,
-			Message:   v.Message,
-			ParamRule: v.ParamRule,
+			Field:      v.Field,
+			Rule:       v.Rule,
+			Message:    v.Message,
+			ParamRule:  v.ParamRule,
+			ValueError: v.ValueError,
 		}
 
 		ListES[v.Field] = oneErr
@@ -114,4 +137,17 @@ func (v ValidateApiRequestBalance) orderExist(fl validator.FieldLevel) bool {
 func (v ValidateApiRequestBalance) orderStatusValid(fl validator.FieldLevel) bool {
 	//todo check
 	return true
+}
+
+func (v ValidateApiRequestBalance) typeRequestExist(fl validator.FieldLevel) bool {
+	t := value_object.NewTypeRequestBalance()
+	return t.TypeRequestExist(fl.Field().String())
+}
+
+func (v ValidateApiRequestBalance) MessageErrorTypeRequestNotValid() string {
+	t := value_object.NewTypeRequestBalance()
+	allType := fmt.Sprintf("%v", t.AllType)
+	message := fmt.Sprintf("typeRequest is not valid, in list: %s", allType)
+
+	return message
 }

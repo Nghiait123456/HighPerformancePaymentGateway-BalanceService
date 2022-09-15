@@ -1,6 +1,7 @@
 package queue_job_request
 
 import (
+	"fmt"
 	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,9 +24,11 @@ type (
 
 func (q *QueueJob) Push(rq OneRequest) {
 	q.QJob <- rq
+	fmt.Println("push job done")
 }
 
 func (q *QueueJob) AutoHandleRequest() {
+	log.Info("start auto handle request")
 	for {
 		select {
 		case rq := <-q.QJob:
@@ -61,5 +64,7 @@ func (q *QueueJob) Init(allP calculator.AllPartnerInterface) {
 }
 
 func NewQueueJob() QueueJobInterface {
-	return &QueueJob{}
+	return &QueueJob{
+		QJob: make(JobRequest),
+	}
 }

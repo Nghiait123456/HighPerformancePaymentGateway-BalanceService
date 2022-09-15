@@ -16,11 +16,13 @@ type (
 	AllPartner struct {
 		allPartner        PartnersBalance
 		muLock            sync.Mutex
-		cnRechargeLog     sql.Connect
-		cnBalance         sql.Connect
+		cnRechargeLog     CnRechargeLog
+		cnBalance         CnBalance
 		logRequestBalance logs_request_balance.LogsInterface
 	}
 
+	CnRechargeLog   sql.Connect
+	CnBalance       sql.Connect
 	PartnersBalance map[string]partnerBalance
 
 	AllPartnerInterface interface {
@@ -39,8 +41,8 @@ type (
 func (allP *AllPartner) LoadAllPartnerInfo() (PartnersBalance, error) {
 	fake := make(PartnersBalance)
 	//todo get indexLogRequestLatest from DB and update to
-	fake["partner_test"] = partnerBalance{
-		partnerCode:           "partner_test",
+	fake["TEST"] = partnerBalance{
+		partnerCode:           "TEST",
 		partnerName:           "TEST",
 		partnerIdentification: 1,
 		balance:               1000000,
@@ -116,7 +118,8 @@ func InitAllPartnerData() AllPartnerInterface {
 	return &allPartner
 }
 
-func NewAllPartner(allPartner PartnersBalance, cnRechargeLog sql.Connect, cnBalance sql.Connect, logRequestBalance logs_request_balance.LogsInterface) AllPartnerInterface {
+func NewAllPartner(allPartner PartnersBalance, cnRechargeLog CnRechargeLog, cnBalance CnBalance, logRequestBalance logs_request_balance.LogsInterface) *AllPartner {
+	var _ AllPartnerInterface = (*AllPartner)(nil)
 	return &AllPartner{
 		allPartner:        allPartner,
 		cnRechargeLog:     cnRechargeLog,

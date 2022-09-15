@@ -49,7 +49,9 @@ func (b *balancePlaceHolderHistory) GetAllPlaceHolder() allAmountPlaceHolderFrLo
 }
 
 func NewBalancePlaceHolderHistory() balancePlaceHolderHistoryInterface {
-	b := balancePlaceHolderHistory{}
+	b := balancePlaceHolderHistory{
+		allAmountPlaceHolder: make(allAmountPlaceHolderFrLogs),
+	}
 	b.initBalancePlaceHolderHistory()
 	return &b
 }
