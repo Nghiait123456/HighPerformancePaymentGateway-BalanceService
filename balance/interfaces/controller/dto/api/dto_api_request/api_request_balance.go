@@ -1,6 +1,7 @@
 package dto_api_request
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/server/web_server"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_response"
@@ -42,7 +43,8 @@ func (a *RequestBalanceDto) BindDataDto(c *fiber.Ctx) (dto_api_response.Response
 			},
 		}
 
-		log.Error("param input not valid, please check doc and try again")
+		errML := fmt.Sprintf("param input not valid, please check doc and try again, detail: %s", errBP.Error())
+		log.Error(errML)
 		return res, errBP
 	}
 

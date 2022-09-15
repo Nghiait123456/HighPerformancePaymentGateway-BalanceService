@@ -47,7 +47,7 @@ func (allP *AllPartner) LoadAllPartnerInfo() (PartnersBalance, error) {
 		partnerCode:           "TEST",
 		partnerName:           "TEST",
 		partnerIdentification: 1,
-		balance:               1000000,
+		balance:               99999000000000,
 		amountPlaceHolder:     0,
 		cnRechargeLog:         allP.cnRechargeLog,
 		cnBalance:             allP.cnBalance,
@@ -58,7 +58,7 @@ func (allP *AllPartner) LoadAllPartnerInfo() (PartnersBalance, error) {
 		partnerCode:           "TEST1",
 		partnerName:           "TEST1",
 		partnerIdentification: 1,
-		balance:               1000000,
+		balance:               99999000000000,
 		amountPlaceHolder:     0,
 		cnRechargeLog:         allP.cnRechargeLog,
 		cnBalance:             allP.cnBalance,
@@ -94,7 +94,7 @@ func (allP *AllPartner) InitAllPartnerInfo() error {
 	}
 
 	allP.muLock.Unlock()
-	allP.dumpAllPartnerInfo()
+	//allP.dumpAllPartnerInfo()
 
 	return nil
 }
