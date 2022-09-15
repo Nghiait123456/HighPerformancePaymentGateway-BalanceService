@@ -7,6 +7,7 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/server/web_server"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/api/handle"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
+	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
 	"os"
 )
 
@@ -85,6 +86,7 @@ func (m *Module) StartWebServer() {
 }
 
 func (m *Module) Init() {
+	m.InitLogs()
 	m.Inject()
 	m.InitService()
 	m.ResignRoutes()
@@ -92,6 +94,14 @@ func (m *Module) Init() {
 
 func (m *Module) InitService() {
 	m.Service.Init()
+}
+
+func (m *Module) InitLogs() {
+	log_init.Init(log_init.Log{
+		TypeFormat: log_init.TYPE_FORMAT_TEXT,
+		TypeOutput: log_init.TYPE_OUTPUT_FILE,
+		LinkFile:   "balance/infrastructure/log/log_file/log.log",
+	})
 }
 
 func (m *Module) NewRouter() *Routes {
