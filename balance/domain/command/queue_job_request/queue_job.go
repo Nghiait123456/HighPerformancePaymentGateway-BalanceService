@@ -48,7 +48,7 @@ func (q *QueueJob) AutoHandleRequest() {
 				log.WithFields(log.Fields{
 					"errMessage": errHOR.Error(),
 				}).Error("dont get one partner for handle request")
-				// todo push error, push even, log
+				//todo push error, push even, log
 				break
 			}
 
@@ -69,7 +69,8 @@ func (q *QueueJob) Init(allP calculator.AllPartnerInterface) {
 		m := "Queue Job handle request balance init error"
 		log.Error(m)
 		fmt.Println(m)
-		//todo open emergency stop and push message
+		q.AllPartner.ThrowEStop()
+		//todo alert message warring
 	}
 }
 

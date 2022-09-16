@@ -21,6 +21,7 @@ type (
 		cnRechargeLog     CnRechargeLog
 		cnBalance         CnBalance
 		logRequestBalance logs_request_balance.LogsInterface
+		eStop             emergencyStopInterface
 	}
 
 	CnRechargeLog   sql.Connect
@@ -37,6 +38,8 @@ type (
 		UpdateOnePartner(p partnerBalance) error
 		GetOnePartner(partnerCode string) (partnerBalance, error)
 		getKeyOnePartner(p partnerBalance) string
+		ThrowEStop()
+		IsEStop() bool
 	}
 )
 
@@ -94,7 +97,7 @@ func (allP *AllPartner) InitAllPartnerInfo() error {
 	}
 
 	allP.muLock.Unlock()
-	//allP.dumpAllPartnerInfo()
+	allP.dumpAllPartnerInfo()
 
 	return nil
 }
@@ -141,6 +144,14 @@ func (allP *AllPartner) GetOnePartner(partnerCode string) (partnerBalance, error
 	return partner, nil
 }
 
+func (allP *AllPartner) ThrowEStop() {
+	allP.eStop.ThrowEmergencyStop()
+}
+
+func (allP AllPartner) IsEStop() bool {
+	return allP.eStop.IsStop()
+}
+
 func InitAllPartnerData() AllPartnerInterface {
 	allPartner := AllPartner{}
 	err := allPartner.InitAllPartnerInfo()
@@ -158,5 +169,6 @@ func NewAllPartner(allPartner PartnersBalance, cnRechargeLog CnRechargeLog, cnBa
 		cnRechargeLog:     cnRechargeLog,
 		cnBalance:         cnBalance,
 		logRequestBalance: logRequestBalance,
+		eStop:             NewEmergencyStop(),
 	}
 }
