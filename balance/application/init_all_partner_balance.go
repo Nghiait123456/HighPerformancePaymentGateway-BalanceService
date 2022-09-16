@@ -51,12 +51,19 @@ func (a *AllPartnerBalance) Init() error {
 }
 
 func (a *AllPartnerBalance) HandleOneRequestBalance(b BalanceRequest) (respone_request_balance.RequestBalanceResponse, bool) {
+	if a.AllPartner.IsEStop() {
+		return respone_request_balance.ErrorWhySystemEStop(), false
+	}
+
 	a.QueueJob.Push(b.BRequest)
 	return respone_request_balance.SuccessBalanceResponse(), true
 }
 
 func (a *AllPartnerBalance) HandleGroupRequestBalance(gb GroupBalanceRequest) (respone_request_balance.RequestBalanceResponse, DetailResultGroupRequest, bool) {
-	//todo add timeout detect chan not work, handle it
+	if a.AllPartner.IsEStop() {
+		return respone_request_balance.ErrorWhySystemEStop(), DetailResultGroupRequest{}, false
+	}
+
 	for _, v := range gb.BRequest {
 		a.QueueJob.Push(v)
 		gb.ListRequestSuccess = append(gb.ListRequestSuccess, v)

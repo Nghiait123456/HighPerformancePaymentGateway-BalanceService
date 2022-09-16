@@ -51,7 +51,7 @@ func (r *ResponseRequestBalanceDto) MappingFrServiceRequestBalanceResponse(listS
 
 	if status == false {
 		r.HttpCode = http_status.StatusBadRequest
-		r.Status = STATUS_SUCCESS
+		r.Status = STATUS_ERROR
 		r.Code = response.Code
 		r.Message = response.Message
 		r.ListRequestSuccess = listSuccess
