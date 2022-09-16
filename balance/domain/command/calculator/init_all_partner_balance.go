@@ -121,9 +121,6 @@ func (allP *AllPartner) dumpAllPartnerInfo() {
 }
 
 func (allP *AllPartner) UpdateOnePartner(p partnerBalance) error {
-	//p.muLock.Lock()
-	//defer p.muLock.Unlock()
-
 	key := allP.getKeyOnePartner(p)
 	allP.allPartner[key] = p
 

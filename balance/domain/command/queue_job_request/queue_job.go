@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type (
@@ -62,6 +63,40 @@ func (q *QueueJob) Init(allP calculator.AllPartnerInterface) {
 	go func() {
 		q.AutoHandleRequest()
 	}()
+
+	rs := q.testInitQueue()
+	if rs != true {
+		m := "Queue Job handle request balance init error"
+		log.Error(m)
+		fmt.Println(m)
+		//todo open emergency stop and push message
+	}
+}
+
+func (q *QueueJob) testInitQueue() bool {
+	//sleep for make sure consumer ready
+	time.Sleep(100 * time.Nanosecond)
+	tOut := time.After(1 * time.Millisecond)
+	oneRqTest := OneRequest{
+		AmountRequest:         0,
+		PartnerCode:           "dev_test_channel_ready_123456",
+		PartnerIdentification: 0,
+		OrderID:               0,
+		TypeRequest:           "test",
+	}
+
+	select {
+	case q.QJob <- oneRqTest:
+		message := fmt.Sprintf("testInitQueue: Success, queue ready for work")
+		log.Info(message)
+		fmt.Println(message)
+		return true
+	case <-tOut:
+		message := fmt.Sprintf("testInitQueue: Error, queue dont have consumer or queue work very late")
+		log.Error(message)
+		fmt.Println(message)
+		return false
+	}
 }
 
 func NewQueueJob() QueueJobInterface {
