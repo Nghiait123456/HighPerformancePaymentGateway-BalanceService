@@ -137,7 +137,7 @@ func (pB *partnerBalance) updateTypeRequestPaymentDB(b balancerRequest) (bool, e
 		//try again
 		saveLog2, errSL2 := pB.saveLogsPlaceHolder(b)
 		if !saveLog2 {
-			EmergencyStop().ThrowEmergencyStop()
+			//EmergencyStop().ThrowEmergencyStop()
 			err := fmt.Sprintf("updateTypeRequestPaymentDB error, err1: %s, err2 : %s ", errSL1.Error(), errSL2.Error())
 			panic(err)
 		}
