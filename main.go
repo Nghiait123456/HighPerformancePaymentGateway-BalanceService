@@ -26,7 +26,6 @@ type Person struct {
 }
 
 func main() {
-	a
 	balanceModule := balance.NewModule()
 	balanceModule.Start()
 }
