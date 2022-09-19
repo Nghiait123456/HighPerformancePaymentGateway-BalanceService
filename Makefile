@@ -3,5 +3,3 @@ benchmarker:
 
 test:
 	go test -v ./...
-
-
