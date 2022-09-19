@@ -97,7 +97,7 @@ func (allP *AllPartner) InitAllPartnerInfo() error {
 	}
 
 	allP.muLock.Unlock()
-	allP.dumpAllPartnerInfo()
+	//allP.dumpAllPartnerInfo()
 
 	return nil
 }
