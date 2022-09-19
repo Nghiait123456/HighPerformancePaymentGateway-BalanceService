@@ -137,7 +137,7 @@ func (pB *partnerBalance) decreaseIndexLogRequestLatest() error {
 
 func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
 	if pB.balance < amountRequest {
-		err := fmt.Sprintf("AmountRequest %i greater than amountTatal %i in PartnerCode %s", amountRequest, pB.balance, pB.partnerCode)
+		err := fmt.Sprintf("AmountRequest %d greater than amountTatal %d in PartnerCode %s", amountRequest, pB.balance, pB.partnerCode)
 		return errors.New(err)
 	}
 
@@ -147,7 +147,7 @@ func (pB *partnerBalance) decreaseAmount(amountRequest uint64) error {
 
 func (pB *partnerBalance) decreaseAmountPlaceHolder(amountRequest uint64) error {
 	if pB.amountPlaceHolder < amountRequest {
-		err := fmt.Sprintf("AmountRequest %i greater than amountPlaceHolder %i in PartnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
+		err := fmt.Sprintf("AmountRequest %d greater than amountPlaceHolder %d in PartnerCode %s", amountRequest, pB.amountPlaceHolder, pB.partnerCode)
 		return errors.New(err)
 	}
 
