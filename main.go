@@ -34,6 +34,7 @@ func response(c *fiber.Ctx) error {
 }
 
 func temp() {
+
 	log_init.Init(log_init.Log{
 		TypeFormat: log_init.TYPE_FORMAT_TEXT,
 		TypeOutput: log_init.TYPE_OUTPUT_FILE,
