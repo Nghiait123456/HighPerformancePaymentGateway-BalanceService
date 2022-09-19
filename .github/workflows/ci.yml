@@ -22,7 +22,7 @@ jobs:
         run: |
           go install github.com/google/wire/cmd/wire@latest
           ls
-          cd ../../balance
+          cd /balance
           sudo wire
 
       - name: Build
