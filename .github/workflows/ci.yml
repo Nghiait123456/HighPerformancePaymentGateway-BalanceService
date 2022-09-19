@@ -21,6 +21,7 @@ jobs:
       - name: Create DI-file with Wire
         run: |
           go install github.com/google/wire/cmd/wire@latest
+          ls
           cd ../../balance
           sudo wire
 
