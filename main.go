@@ -17,6 +17,7 @@ func handle(c *fiber.Ctx) error {
 	panic("have error")
 	return fiber.NewError(500, "have eror")
 	return c.SendString("Hello, World!")
+
 }
 
 type Person struct {
