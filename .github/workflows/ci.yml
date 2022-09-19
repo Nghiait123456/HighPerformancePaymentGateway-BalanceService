@@ -20,14 +20,10 @@ jobs:
 
       - name: Create DI-file with Wire
         run: |
-          go install github.com/google/wire/cmd/wire@latest
-          ls
-          cd balance/ 
-          wire
+          make generate-wire-di
 
       - name: Build
         run: |
-          ls
           go build -v ./...
 
       - name: Test
