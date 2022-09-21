@@ -11,6 +11,7 @@ type (
 		TypeOutput string
 		TypeFormat string
 		LinkFile   string
+		LinkFolder string
 	}
 )
 
@@ -26,10 +27,14 @@ const (
 func setOutPut(l Log) {
 	switch l.TypeOutput {
 	case TYPE_OUTPUT_FILE:
+		errCFL := os.MkdirAll(l.LinkFolder, 0666)
+		if errCFL != nil {
+			panic(fmt.Sprintf("Failed to create folder log, error : %s", errCFL.Error()))
+		}
+
 		file, err := os.OpenFile(l.LinkFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to open log file, error : %s", err.Error()))
-			os.Exit(0)
 		}
 
 		log.SetOutput(file)

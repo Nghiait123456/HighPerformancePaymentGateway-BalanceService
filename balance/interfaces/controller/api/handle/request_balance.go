@@ -5,6 +5,7 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/application"
 	"github.com/high-performance-payment-gateway/balance-service/balance/application/respone_request_balance"
 	"github.com/high-performance-payment-gateway/balance-service/balance/domain/command/calculator"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/server/web_server"
 	validate_api "github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/api/validate"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_request"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/dto/api/dto_api_response"
@@ -24,6 +25,12 @@ type (
 		Message    string
 	}
 )
+
+func (r *RequestBalance) HealthCheck(c *fiber.Ctx) error {
+	return c.Status(200).JSON(web_server.MapBase{
+		"status": "ok",
+	})
+}
 
 func (r *RequestBalance) HandleOneRequestBalance(c *fiber.Ctx) error {
 	rqDto := dto_api_request.NewRequestBalanceDto()
