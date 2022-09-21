@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/high-performance-payment-gateway/balance-service/balance/application"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/server/web_server"
 	"github.com/high-performance-payment-gateway/balance-service/balance/interfaces/controller/api/handle"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
@@ -73,11 +74,12 @@ func (m Module) NewWebServer() web_server.HttpServer {
 }
 
 func (m *Module) ResignApi() {
-	m.HttpServer.Post("/request-balance", m.RouterHttp.apiController.HandleOneRequestBalance)
+	m.HttpServer.Get("balance/health-check", m.RouterHttp.apiController.HealthCheck)
+	m.HttpServer.Post("balance/request-balance", m.RouterHttp.apiController.HandleOneRequestBalance)
 }
 
 func (m *Module) StartWebServer() {
-	errApp := m.HttpServer.Listen(":3000")
+	errApp := m.HttpServer.Listen(":8080")
 	if errApp != nil {
 		errMApp := fmt.Sprintf("Init app error, message: %s", errApp.Error())
 		panic(errMApp)
@@ -87,6 +89,7 @@ func (m *Module) StartWebServer() {
 
 func (m *Module) Init() {
 	m.InitLogs()
+	m.InitEnv()
 	m.Inject()
 	m.InitService()
 	m.ResignRoutes()
@@ -95,12 +98,34 @@ func (m *Module) Init() {
 func (m *Module) InitService() {
 	m.Service.Init()
 }
+func (m *Module) InitEnv() {
+	linkENVLocal, statusELC := os.LookupEnv("LINK_ENV_LOCAL")
+	if statusELC == false {
+		panic("missing env LINK_ENV_LOCAL")
+	}
+
+	gCf := env.NewGlobalConfig()
+	gCf.Init(env.ConfigEnv{
+		FilePatchLogInLocal: linkENVLocal,
+	})
+}
 
 func (m *Module) InitLogs() {
+	linkFileLog, statusLLF := os.LookupEnv("LINK_FILE_LOG")
+	if statusLLF == false {
+		panic("missing env LINK_LOG_FILE")
+	}
+
+	linkFolderLog, statusLPL := os.LookupEnv("LINK_FOLDER_LOG")
+	if statusLPL == false {
+		panic("missing env LINK_FOLDER_LOG")
+	}
+
 	log_init.Init(log_init.Log{
 		TypeFormat: log_init.TYPE_FORMAT_TEXT,
 		TypeOutput: log_init.TYPE_OUTPUT_FILE,
-		LinkFile:   "balance/infrastructure/log/log_file/log.log",
+		LinkFile:   linkFileLog,
+		LinkFolder: linkFolderLog,
 	})
 }
 
