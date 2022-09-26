@@ -30,5 +30,6 @@ jobs:
           REPOSITORY: payment-balance-calculator
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          cd devops/
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
