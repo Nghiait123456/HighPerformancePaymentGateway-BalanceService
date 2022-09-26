@@ -10,3 +10,9 @@ generate-wire-di:
 	cd balance/
 	wire
 
+
+build-docker-images:
+	docker build   -t balance-service:latest -f devops/Dockerfile .
+
+run-docker-container:
+	docker run -p 8080:8080  --env-file=devops/.env --name payment-balance-service   balance-service:latest
