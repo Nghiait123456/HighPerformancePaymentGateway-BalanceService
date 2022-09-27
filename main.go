@@ -14,7 +14,7 @@ import (
 )
 
 func handle(c *fiber.Ctx) error {
-	panic("have error2222   111sssss222dddddccc                v                                        ")
+	panic("have error2222   111sssss222dddddccc                v                                           ")
 	return fiber.NewError(500, "have erorssss")
 	return c.SendString("Hello, World!")
 
