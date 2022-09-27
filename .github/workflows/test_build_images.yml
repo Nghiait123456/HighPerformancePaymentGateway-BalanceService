@@ -11,5 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Test build images success before merge
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .l
