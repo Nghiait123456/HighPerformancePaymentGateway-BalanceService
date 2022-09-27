@@ -10,7 +10,9 @@ generate-wire-di:
 	cd balance/
 	wire
 
-
+cache-authen-git:
+	git config --global credential.helper cache
+	// apter pull, push one times, after success
 build-docker-images:
 	docker build   -t balance-service:latest  .
 
