@@ -1,0 +1,15 @@
+name: Test build images
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .l
