@@ -1,7 +1,7 @@
 # Build stage
 FROM golang:1.18-alpine3.15 AS builder
 WORKDIR /app
-COPY . .
+COPY .. .
 
 RUN apk add build-base
 RUN go install github.com/google/wire/cmd/wire@latest
