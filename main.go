@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/high-performance-payment-gateway/balance-service/balance"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
 	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
@@ -26,8 +25,16 @@ type Person struct {
 }
 
 func main() {
-	balanceModule := balance.NewModule()
-	balanceModule.Start()
+	app := fiber.New()
+	// Routes
+	app.Get("/health-check", func(c *fiber.Ctx) error {
+		return c.Status(200).SendString("Hello, World 👋!")
+	})
+	// Start server
+	app.Listen(":8080")
+
+	//balanceModule := balance.NewModule()
+	//balanceModule.Start()
 }
 
 func response(c *fiber.Ctx) error {
