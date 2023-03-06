@@ -26,7 +26,7 @@ type Person struct {
 
 func main() {
 	app := fiber.New()
-	// Routes
+	// Routes ...
 	app.Get("/health-check", func(c *fiber.Ctx) error {
 		return c.Status(200).SendString("Hello, World 👋!")
 	})
