@@ -6,11 +6,17 @@ on:
 
 jobs:
 
-  build:
+  deploy:
     name: Build image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.24.10' # default is latest stable
+        id: install
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -29,5 +35,17 @@ jobs:
           REPOSITORY: payment-gateway-balance
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -f ./devops/Dockerfile .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t latest -f ./devops/Dockerfile .
+          docker push $REGISTRY/$REPOSITORY
+
+#      - name: Update kube config
+#        run: aws eks update-kubeconfig --name simple-bank --region eu-west-1
+
+      - name: Deploy image to Amazon EKS
+        run: |
+          kubectl apply -f eks/aws-auth.yaml
+          kubectl apply -f eks/deployment.yaml
+          kubectl apply -f eks/service.yaml
+          kubectl apply -f eks/issuer.yaml
+          kubectl apply -f eks/ingress.yaml
+
