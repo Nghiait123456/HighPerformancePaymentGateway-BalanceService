@@ -39,12 +39,12 @@ jobs:
           docker push -a $REGISTRY/$REPOSITORY
 
       - name: Update kube config
-        run: aws eks update-kubeconfig --name payment-balance --region ap-southeast-1
+        run: aws eks update-kubeconfig --name payment-balance --region ap-southeast-1 --force-new-deployment
 
       - name: Deploy image to Amazon EKS
         run: |
           kubectl apply -f eks/aws-auth.yaml
-          kubectl apply -f eks/deployment.yaml
+          kubectl rollout restart -f eks/deployment.yaml
           kubectl apply -f eks/service.yaml
           kubectl apply -f eks/issuer.yaml
           kubectl apply -f eks/ingress.yaml
