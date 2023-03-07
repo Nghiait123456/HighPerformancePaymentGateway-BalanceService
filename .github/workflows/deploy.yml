@@ -39,7 +39,7 @@ jobs:
           docker push -a $REGISTRY/$REPOSITORY
 
       - name: Update kube config
-        run: aws eks update-kubeconfig --name payment-balance --region ap-southeast-1 --force-new-deployment
+        run: aws eks update-kubeconfig --name payment-balance --region ap-southeast-1
 
       - name: Deploy image to Amazon EKS
         run: |
