@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payment-gateway-balance-calculator-service
+  name: payment-gateway-balance-calculator-service-lmax
   labels:
     app: payment-gateway-balance-calculator-service
 spec:
@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: payment-gateway-balance-calculator-service
-          image: 387867911189.dkr.ecr.ap-southeast-1.amazonaws.com/payment-balance-calculator:9185bdbbf2fda9cdc405400fd922375c45a97a66
+          image: 387867911189.dkr.ecr.ap-southeast-1.amazonaws.com/payment-gateway-balance:latest
           ports:
             - containerPort: 8080
