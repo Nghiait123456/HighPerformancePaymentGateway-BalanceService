@@ -17,5 +17,6 @@ spec:
       containers:
         - name: payment-gateway-balance-calculator-service
           image: 387867911189.dkr.ecr.ap-southeast-1.amazonaws.com/payment-gateway-balance:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
