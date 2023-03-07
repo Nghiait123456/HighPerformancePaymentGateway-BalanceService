@@ -35,8 +35,8 @@ jobs:
           REPOSITORY: payment-gateway-balance
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build  -t latest -f ./devops/Dockerfile .
-          docker push  $ECR_REGISTRY/$ECR_REPOSITORY
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:latest -f ./devops/Dockerfile .
+          docker push $REGISTRY/$REPOSITORY
 
       - name: Update kube config
         run: aws eks update-kubeconfig --name payment-balance --region ap-southeast-1
