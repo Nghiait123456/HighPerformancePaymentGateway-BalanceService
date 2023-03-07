@@ -37,5 +37,5 @@ Note: To scale out this service, we don't keep status request's order. This is a
 1, but 1000 requests in step 4 may have a different order. As the realtime system is very fast, this is not necessary
 for us. Even if person A requests 0.01 ms before person B, but requesting person B to the server first, it will be
 handled first, and person A may not be able to buy goods. This is accepted by us with a very small tolerance, there will
-be no bad user experience.         </br>
+be no bad user experience.            </br>
 
