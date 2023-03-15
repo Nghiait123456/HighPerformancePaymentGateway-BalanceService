@@ -1,42 +1,13 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
-	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/config/env"
-	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/error_handle"
-	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/log_init"
-	"github.com/high-performance-payment-gateway/balance-service/balance/pkg/external/validate"
-	"os"
-)
-
-func handle(c *fiber.Ctx) error {
-	panic("have error2222   111sssss222dddddccc                v                                           ")
-	return fiber.NewError(500, "have erorssss")
-	return c.SendString("Hello, World!")
-
-}
-
-type Person struct {
-	Name uint64 `json:"name" xml:"name" form:"name"`
-	//Pass interface{} `json:"pass" xml:"pass" form:"pass"`
-}
+import "github.com/high-performance-payment-gateway/balance-service/balance"
 
 func main() {
-	app := fiber.New()
-	// Routes ...
-	app.Get("/health-check", func(c *fiber.Ctx) error {
-		return c.Status(200).SendString("KKKKK Hello, World hiiiii 👋!")
-	})
-	// Start server
-	app.Listen(":8080")
-
-	//balanceModule := balance.NewModule()
-	//balanceModule.Start()
+	balanceModule := balance.NewModule()
+	balanceModule.Start()
 }
 
+/*
 func response(c *fiber.Ctx) error {
 	return c.SendString("Success !!!!!!!!!!!!!!!1111111")
 }
@@ -241,3 +212,4 @@ func TestAutoChangeSecret(ai env.AuthInternalServiceConfigInterface) {
 	//	}
 	//}()
 }
+*/

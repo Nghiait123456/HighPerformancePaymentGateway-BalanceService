@@ -64,6 +64,8 @@ func (q *QueueJob) Init(allP calculator.AllPartnerInterface) {
 		q.AutoHandleRequest()
 	}()
 
+	//delay end test queue run success
+	time.Sleep(5 * time.Microsecond)
 	rs := q.testInitQueue()
 	if rs != true {
 		m := "Queue Job handle request balance init error"
@@ -72,12 +74,24 @@ func (q *QueueJob) Init(allP calculator.AllPartnerInterface) {
 		q.AllPartner.ThrowEStop()
 		//todo alert message warring
 	}
+
+	q.dumpPartnerInfo()
 }
 
+func (q QueueJob) dumpPartnerInfo() {
+	go func() {
+		for {
+			fmt.Println("partner-info", q.AllPartner)
+			fmt.Println("queue-job", q.QJob)
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
+}
 func (q *QueueJob) testInitQueue() bool {
 	//sleep for make sure consumer ready
-	time.Sleep(100 * time.Nanosecond)
-	tOut := time.After(1 * time.Millisecond)
+	time.Sleep(100 * time.Microsecond)
+	tOut := time.After(5 * time.Millisecond)
 	oneRqTest := OneRequest{
 		AmountRequest:         0,
 		PartnerCode:           "dev_test_channel_ready_123456",
