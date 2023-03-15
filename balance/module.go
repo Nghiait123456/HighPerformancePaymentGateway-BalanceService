@@ -101,7 +101,7 @@ func (m *Module) InitService() {
 func (m *Module) InitEnv() {
 	linkENVLocal, statusELC := os.LookupEnv("LINK_ENV_LOCAL")
 	if statusELC == false {
-		panic("missing env LINK_ENV_LOCAL")
+		linkENVLocal = "./balance/infrastructure/config/env/.env"
 	}
 
 	gCf := env.NewGlobalConfig()
@@ -113,12 +113,12 @@ func (m *Module) InitEnv() {
 func (m *Module) InitLogs() {
 	linkFileLog, statusLLF := os.LookupEnv("LINK_FILE_LOG")
 	if statusLLF == false {
-		panic("missing env LINK_LOG_FILE")
+		linkFileLog = "./balance/infrastructure/log/log_file/log.log"
 	}
 
 	linkFolderLog, statusLPL := os.LookupEnv("LINK_FOLDER_LOG")
 	if statusLPL == false {
-		panic("missing env LINK_FOLDER_LOG")
+		linkFolderLog = "./balance/infrastructure/log/log_file"
 	}
 
 	log_init.Init(log_init.Log{

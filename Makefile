@@ -14,14 +14,16 @@ cache-authen-git:
 	git config --global credential.helper cache
 	// apter pull, push one times, after success
 build-docker-images:
-	docker build   -t balance-service:latest  .
+	docker build   -t balance-service:latest -f=devops/Dockerfile .
 
 build-docker-images-no-cache:
-	docker build   -t balance-service:latest --no-cache=true .
+	docker build   -t balance-service:latest --no-cache=true -f=devops/Dockerfile .
 
 run-docker-container:
-	docker run -p 8080:8080  --env-file=devops/.env --name payment-balance-service   balance-service:latest
+	docker run -p 8080:8080  --env-file=devops/.env balance-service:latest
 
+run-main-go:
+	go run main.go  --env-file=devops/.env
 
 update-kube-config:
 	aws eks update-kubeconfig --name payment-gateway-balance-calculator --region ap-southeast-1 --role-arn arn:aws:iam::387867911189:user/nghiaIT

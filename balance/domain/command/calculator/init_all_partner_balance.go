@@ -50,7 +50,7 @@ func (allP *AllPartner) LoadAllPartnerInfo() (PartnersBalance, error) {
 		partnerCode:           "TEST",
 		partnerName:           "TEST",
 		partnerIdentification: 1,
-		balance:               99999000000000,
+		balance:               2000000,
 		amountPlaceHolder:     0,
 		cnRechargeLog:         allP.cnRechargeLog,
 		cnBalance:             allP.cnBalance,

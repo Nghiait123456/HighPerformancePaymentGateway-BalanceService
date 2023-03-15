@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 	"os"
+	"os/exec"
 )
 
 type (
@@ -60,9 +61,7 @@ func (g GlobalConfig) IsEnvironmentValid(v string) bool {
 func (g *GlobalConfig) validateEnvironmentType() (string, error) {
 	evm := os.Getenv(ENV_ENVIRONMENT)
 	if len(evm) == 0 {
-		errM := fmt.Sprintf("ENV_ENVIRONMENT with key %s empty or not exits", ENV_ENVIRONMENT)
-		panic(errM)
-		os.Exit(0)
+		evm = ENV_LOCAL
 	}
 
 	if !g.IsEnvironmentValid(evm) {
@@ -95,6 +94,15 @@ func (g *GlobalConfig) loadEnv(c ConfigEnv) {
 }
 
 func (g *GlobalConfig) loadEnvLocal(c ConfigEnv) {
+
+	cmd := exec.Command("ls", "-l")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("show ls -l in loadEnvLocal", string(output))
+
 	//load env
 	errL := godotenv.Load(c.FilePatchLogInLocal)
 	if errL != nil {
@@ -188,8 +196,7 @@ func (g GlobalConfig) ListEnvRequireSetUpBeforeInit() []string {
 func (g GlobalConfig) CheckEnvRequireSetUpBeforeInit() {
 	envEnviro := os.Getenv(ENV_ENVIRONMENT)
 	if envEnviro == "" {
-		panic("don't exits ENV_ENVIRONMENT")
-		os.Exit(0)
+		envEnviro = ENV_LOCAL
 	}
 
 	if envEnviro != ENV_LOCAL {
@@ -211,6 +218,7 @@ func (g GlobalConfig) CheckEnvRequireSetUpBeforeInit() {
 			os.Exit(0)
 		}
 	}
+
 }
 
 func (g GlobalConfig) AuthInternalServiceConfig() AuthInternalServiceConfigInterface {
