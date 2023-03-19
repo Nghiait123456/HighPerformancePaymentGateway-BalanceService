@@ -50,7 +50,7 @@ func (r *RequestBalance) HandleOneRequestBalance(c *fiber.Ctx) error {
 		return resV.Response(c)
 	}
 
-	gb := new(application.GroupBalanceRequest)
+	gb := &application.GroupBalanceRequest{BRequest: make([]calculator.BalancerRequest, 0, len(rqDto.Requests)), ListRequestSuccess: make([]calculator.BalancerRequest, 0, len(rqDto.Requests))}
 	for _, v := range rqDto.Requests {
 		bRequest := calculator.BalancerRequest{
 			AmountRequest:         v.AmountRequest,
