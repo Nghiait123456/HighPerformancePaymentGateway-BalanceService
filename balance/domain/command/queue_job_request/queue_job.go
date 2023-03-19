@@ -25,7 +25,6 @@ type (
 
 func (q *QueueJob) Push(rq OneRequest) {
 	q.QJob <- rq
-	fmt.Println("push job done")
 }
 
 func (q *QueueJob) AutoHandleRequest() {

@@ -43,36 +43,39 @@ be no bad user experience. </br>
 
 Run: make benchmark </br>
 With a laptop i7 5600U 2.2ghz 8Gb ram, with an instance running a group partner we easily got 1000000 requests with
-about 700s. Each request is closed into a bucket with 10 request orders. Thus, I handled 10 M request balance with about
-700s. The number of requests in one bucket can increase, and we can split into multiple instances, the system can almost
-scale out horizon. The number of requests from humans can increase but there is a limit, the system can meet the global
-request threshold. </br>
+about 110s. Each request is closed into a bucket with 20 request orders. Thus, I handled 20 M request balance with about
+110s. We handle about 200K orders per second. Running with 5 LMAX clusters, we can handle 1M orders per second. This
+number does not make too much of a difference when running on Aws. Here we can scale the number of clusters to a very
+large horizontally, but 1M orders per second is also a very large number about. </br>
 
 ```
-1000000 / 1000000 [==================================================================================================================================================================] 100.00% 2545/s 6m32s
+ 1000000 / 1000000 [==================================================================================================================================================================] 100.00% 9047/s 1m50s
 Done!
 Statistics        Avg      Stdev        Max
-  Reqs/sec      2547.17    1145.08   14463.35
-  Latency      157.06ms    44.47ms      1.01s
+  Reqs/sec      9056.96    3418.32   28633.70
+  Latency       66.27ms     8.86ms   294.84ms
   Latency Distribution
-     50%   146.48ms
-     75%   175.79ms
-     90%   213.49ms
-     95%   245.17ms
-     99%   344.00ms
+     50%    59.38ms
+     75%    79.78ms
+     90%    89.23ms
+     95%    94.98ms
+     99%   114.28ms
   HTTP codes:
     1xx - 0, 2xx - 1000000, 3xx - 0, 4xx - 0, 5xx - 0
     others - 0
-  Throughput:     3.88MB/s
+  Throughput:    24.03MB/s
+
 ```
 
 ## Function <a name="function"></a>
+
 1) Api request balance </br>
 2) Auth, auth-internal </br>
 3) Auto push job to queue, auto handle it </br>
 4) Deploy, CICD with github action, docker, k8s, ssl, LB, auto-scale. </br>
 
 ## Todo <a name="todo"></a>
+
 1) Load prepare from storage </br>
 2) Publish result of balance request to kafka </br>
 3) Backup server and backup info balance realtime, for recovery if crash occurs </br>
