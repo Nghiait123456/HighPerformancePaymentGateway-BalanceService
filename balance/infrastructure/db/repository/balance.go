@@ -21,12 +21,10 @@ type (
 	}
 
 	BalanceInterface interface {
-		SetConnect(cn sql.Connect)
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
-		GetConnectFrGlobalCf() sql.Connect
 		ResetContext()
 		GetById(id uint32) (orm.Balance, error)
 		GetByPartnerCode(partnerCode string) (orm.Balance, error)
@@ -38,16 +36,6 @@ type (
 		CommitAmountPlaceHolderToBalance(c CommitAmountPlaceHolder) error
 	}
 )
-
-func (rp *Balance) SetConnect(cn sql.Connect) {
-	rp.BaseRepo.SetConnect(cn)
-}
-
-func (rp Balance) GetConnectFrGlobalCf() sql.Connect {
-	//todo get connect from global config
-	var cn sql.Connect
-	return cn
-}
 
 func (rp Balance) DB() sql.Connect {
 	return rp.BaseRepo.CN()
@@ -222,8 +210,11 @@ func (rp *Balance) ResetContext() {
 	rp.BaseRepo.ResetContext()
 }
 
-func NewBalanceRepository() BalanceInterface {
-	b := Balance{}
-	b.SetConnect(b.GetConnectFrGlobalCf())
-	return &b
+func NewBalanceRepository(cn sql.Connect) BalanceInterface {
+	baseRepo := NewBaseRepository(cn)
+	rp := Balance{
+		BaseRepo: baseRepo,
+	}
+
+	return &rp
 }

@@ -340,7 +340,8 @@ func (pB *partnerBalance) saveLogsPlaceHolder(s saveLogsDB) (bool, error) {
 func (pB *partnerBalance) saveLogsAndAmountReChargeDB(s saveLogsDB) (bool, error) {
 	var brl orm.BalanceRechargeLog
 	var u repository.UpdateLogsAndBalance
-	rp := repository.NewBalanceAndBalanceRequestLogRepository()
+	var cn sql.Connect //todo get sql.Connect from global config
+	rp := repository.NewBalanceAndBalanceRequestLogRepository(cn)
 
 	// BalanceRechargeLog
 	brl.OrderId = s.b.OrderID

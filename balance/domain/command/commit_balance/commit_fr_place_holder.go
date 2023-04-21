@@ -21,8 +21,7 @@ type (
 )
 
 func (c *CommitPlaceHolderToBalanceDB) Commit() error {
-	rpBalance := repository.NewBalanceRepository()
-	rpBalance.SetConnect(c.CnBalance)
+	rpBalance := repository.NewBalanceRepository(c.CnBalance)
 
 	commit := repository.CommitAmountPlaceHolder{
 		PartnerCode:           c.PartnerCode,

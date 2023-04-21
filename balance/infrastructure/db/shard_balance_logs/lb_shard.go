@@ -2,6 +2,7 @@ package shard_balance_logs
 
 import (
 	"fmt"
+	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/repository_other_service"
 	"math"
@@ -53,8 +54,9 @@ func (lb *LBShardLog) loadBalanceShard(partnerCode string) Connect {
 }
 
 func (lb *LBShardLog) InitAllShard() error {
-	banlancerShardRp := repository.NewBalanceShardRepository()
-	partnerBalanceShardRp := repository.NewPartnerBalanceShardRepository()
+	var cn sql.Connect //todo get connect fr global config
+	banlancerShardRp := repository.NewBalanceShardRepository(cn)
+	partnerBalanceShardRp := repository.NewPartnerBalanceShardRepository(cn)
 	parnterRp := repository_other_service.NewPartnerRepository()
 
 	// init connect all shard

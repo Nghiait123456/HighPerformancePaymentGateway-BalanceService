@@ -15,9 +15,8 @@ type (
 )
 
 func (s SaveLogRequestBalance) Save(lb LBShardLogInterface, log orm.BalanceRequestLog) error {
-	rp := repository.NewBalanceLogRepository()
 	cn := lb.loadBalanceShard(log.PartnerCode)
-	rp.SetConnect(cn)
+	rp := repository.NewBalanceLogRepository(cn)
 
 	ok := rp.CreateNewWithTrans(log)
 	if ok != nil {

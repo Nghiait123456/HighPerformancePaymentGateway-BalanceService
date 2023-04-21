@@ -14,8 +14,6 @@ type (
 	}
 
 	PartnerBalanceShardInterface interface {
-		SetConnect(cn sql.Connect)
-		GetConnectFrGlobalCf() sql.Connect
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
@@ -28,16 +26,6 @@ type (
 		GetAllActiveByPartner(partnerCode string) (entity.PartnerBalanceShards, error)
 	}
 )
-
-func (rp *PartnerBalanceShard) SetConnect(cn sql.Connect) {
-	rp.BaseRepo.SetConnect(cn)
-}
-
-func (rp PartnerBalanceShard) GetConnectFrGlobalCf() sql.Connect {
-	//todo get connect from global config
-	var cn sql.Connect
-	return cn
-}
 
 func (rp PartnerBalanceShard) DB() sql.Connect {
 	return rp.BaseRepo.CN()
@@ -136,8 +124,11 @@ func (rp *PartnerBalanceShard) ResetContext() {
 	rp.BaseRepo.ResetContext()
 }
 
-func NewPartnerBalanceShardRepository() PartnerBalanceShardInterface {
-	rp := PartnerBalanceShard{}
-	rp.SetConnect(rp.GetConnectFrGlobalCf())
+func NewPartnerBalanceShardRepository(cn sql.Connect) PartnerBalanceShardInterface {
+	baseRepo := NewBaseRepository(cn)
+	rp := PartnerBalanceShard{
+		BaseRepo: baseRepo,
+	}
+
 	return &rp
 }

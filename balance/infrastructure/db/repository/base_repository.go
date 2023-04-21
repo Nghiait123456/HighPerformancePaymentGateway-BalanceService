@@ -92,7 +92,9 @@ func (b *Base) GetCancelFc() context.CancelFunc {
 	return b.CancelFc
 }
 
-func NewBaseRepository() BaseInterface {
-	rp := Base{}
+func NewBaseRepository(cn sql.Connect) BaseInterface {
+	rp := Base{
+		DB: cn,
+	}
 	return &rp
 }

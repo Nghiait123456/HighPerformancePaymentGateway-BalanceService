@@ -13,8 +13,6 @@ type (
 	}
 
 	BalanceShardInterface interface {
-		SetConnect(cn sql.Connect)
-		GetConnectFrGlobalCf() sql.Connect
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
@@ -44,15 +42,6 @@ func (rp *BalanceShard) GetById(id uint32) (orm.BalanceShard, error) {
 	return balanceShard, nil
 }
 
-func (rp *BalanceShard) SetConnect(cn sql.Connect) {
-	rp.BaseRepo.SetConnect(cn)
-}
-
-func (rp BalanceShard) GetConnectFrGlobalCf() sql.Connect {
-	//todo get connect from global config
-	var cn sql.Connect
-	return cn
-}
 func (rp BalanceShard) DB() sql.Connect {
 	return rp.BaseRepo.CN()
 }
@@ -140,8 +129,11 @@ func (rp *BalanceShard) ResetContext() {
 	rp.BaseRepo.ResetContext()
 }
 
-func NewBalanceShardRepository() BalanceShardInterface {
-	rp := BalanceShard{}
-	rp.SetConnect(rp.GetConnectFrGlobalCf())
+func NewBalanceShardRepository(cn sql.Connect) BalanceShardInterface {
+	baseRepo := NewBaseRepository(cn)
+	rp := BalanceShard{
+		BaseRepo: baseRepo,
+	}
+
 	return &rp
 }

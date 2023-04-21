@@ -8,7 +8,8 @@ import (
 
 type (
 	BalanceAndBalanceRequestLog struct {
-		BaseRepo BaseInterface
+		BalanceRequestLogeOrm orm.BalanceRequestLog
+		BaseRepo              BaseInterface
 	}
 
 	UpdateLogsAndBalance struct {
@@ -20,23 +21,19 @@ type (
 
 	// implement query in trans with 2 table orm  orm.Balance and orm.BalanceRechargeLog
 	BalanceAndBalanceRequestLogInterface interface {
-		SetConnect(cn sql.Connect)
 		DB() sql.Connect
 		SetTimeout(timeout uint32)
 		ResetTimeout()
 		SetContext(ctx context.Context)
-		GetConnectFrGlobalCf() sql.Connect
 		ResetContext()
 		SaveLogsAndUpdateBalanceReChargeDB(u UpdateLogsAndBalance) error
 	}
 )
 
 func (rp *BalanceAndBalanceRequestLog) SaveLogsAndUpdateBalanceReChargeDB(u UpdateLogsAndBalance) error {
-	rpBRL := NewBalanceRechargeLogRepository()
-	rpBL := NewBalanceRepository()
-
-	rpBRL.SetConnect(u.CN)
-	rpBL.SetConnect(u.CN)
+	var cn sql.Connect //todo get cn from global config
+	rpBRL := NewBalanceRechargeLogRepository(cn)
+	rpBL := NewBalanceRepository(u.CN)
 
 	rpBL.DB().Begin()
 	//update Balance
@@ -91,11 +88,11 @@ func (rp *BalanceAndBalanceRequestLog) ResetContext() {
 	rp.BaseRepo.ResetContext()
 }
 
-func NewBalanceAndBalanceRequestLogRepository() BalanceAndBalanceRequestLogInterface {
-	b := BalanceAndBalanceRequestLog{
-		BaseRepo: NewBaseRepository(),
+func NewBalanceAndBalanceRequestLogRepository(cn sql.Connect) BalanceAndBalanceRequestLogInterface {
+	baseRepo := NewBaseRepository(cn)
+	rp := BalanceAndBalanceRequestLog{
+		BaseRepo: baseRepo,
 	}
-	b.SetConnect(b.GetConnectFrGlobalCf())
 
-	return &b
+	return &rp
 }
