@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"gorm.io/gorm"
 	"os"
 )
 
@@ -26,8 +27,8 @@ type (
 		ResetTimeout()
 		SetContext(ctx context.Context)
 		ResetContext()
-		GetById(id uint32) (orm.Balance, error)
-		GetByPartnerCode(partnerCode string) (orm.Balance, error)
+		GetById(id uint32) (*orm.Balance, error)
+		GetByPartnerCode(partnerCode string) (*orm.Balance, error)
 		CreateNew(bl orm.Balance) error
 		UpdateAllField(update orm.Balance) error
 		UpdateByPartnerCode(partnerCode string, update map[string]interface{}) error
@@ -41,7 +42,27 @@ func (rp Balance) DB() sql.Connect {
 	return rp.BaseRepo.CN()
 }
 
-func (rp *Balance) GetById(id uint32) (orm.Balance, error) {
+func (rp *Balance) GetByIds(ids []uint32) ([]orm.Balance, error) {
+	var balance []orm.Balance
+
+	rp.BaseRepo.UpdateContext()
+	if rp.BaseRepo.IsHaveCancelFc() {
+		defer rp.BaseRepo.GetCancelFc()
+	}
+
+	rs := rp.DB().Where("id in (?)", ids).First(&balance)
+	if rs.Error == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+
+	if rs.Error != nil {
+		return nil, rs.Error
+	}
+
+	return balance, nil
+}
+
+func (rp *Balance) GetById(id uint32) (*orm.Balance, error) {
 	var balance orm.Balance
 
 	rp.BaseRepo.UpdateContext()
@@ -50,14 +71,18 @@ func (rp *Balance) GetById(id uint32) (orm.Balance, error) {
 	}
 
 	rs := rp.DB().Where("id = ?", id).First(&balance)
-	if rs.Error != nil {
-		return balance, rs.Error
+	if rs.Error == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
 
-	return balance, nil
+	if rs.Error != nil {
+		return nil, rs.Error
+	}
+
+	return &balance, nil
 }
 
-func (rp *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
+func (rp *Balance) GetByPartnerCode(partnerCode string) (*orm.Balance, error) {
 	var balance orm.Balance
 
 	rp.BaseRepo.UpdateContext()
@@ -66,11 +91,15 @@ func (rp *Balance) GetByPartnerCode(partnerCode string) (orm.Balance, error) {
 	}
 
 	rs := rp.DB().Where("partner_code = ?", partnerCode).First(&balance)
-	if rs.Error != nil {
-		return balance, rs.Error
+	if rs.Error == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
 
-	return balance, nil
+	if rs.Error != nil {
+		return nil, rs.Error
+	}
+
+	return &balance, nil
 }
 
 func (rp *Balance) CreateNew(bl orm.Balance) error {

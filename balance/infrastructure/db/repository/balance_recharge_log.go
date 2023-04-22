@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"gorm.io/gorm"
 )
 
 type (
@@ -18,7 +19,7 @@ type (
 		ResetTimeout()
 		SetContext(ctx context.Context)
 		ResetContext()
-		GetById(id uint32) (orm.BalanceRechargeLog, error)
+		GetById(id uint32) (*orm.BalanceRechargeLog, error)
 		CreateNew(brl orm.BalanceRechargeLog) error
 		CreateNewWithTrans(brl orm.BalanceRechargeLog) error
 		UpdateAllField(update orm.BalanceRechargeLog) error
@@ -27,20 +28,24 @@ type (
 	}
 )
 
-func (rp *BalanceRechargeLog) GetById(id uint32) (orm.BalanceRechargeLog, error) {
-	var balanceLog orm.BalanceRechargeLog
+func (rp *BalanceRechargeLog) GetById(id uint32) (*orm.BalanceRechargeLog, error) {
+	var balance orm.BalanceRechargeLog
 
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB().Where("id = ?", id).First(&balanceLog)
-	if rs.Error != nil {
-		return balanceLog, rs.Error
+	rs := rp.DB().Where("id = ?", id).First(&balance)
+	if rs.Error == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
 
-	return balanceLog, nil
+	if rs.Error != nil {
+		return nil, rs.Error
+	}
+
+	return &balance, nil
 }
 
 func (rp BalanceRechargeLog) DB() sql.Connect {

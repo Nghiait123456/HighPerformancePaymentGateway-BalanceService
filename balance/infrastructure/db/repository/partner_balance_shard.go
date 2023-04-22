@@ -5,6 +5,7 @@ import (
 	"github.com/high-performance-payment-gateway/balance-service/balance/entity"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"gorm.io/gorm"
 )
 
 type (
@@ -19,7 +20,7 @@ type (
 		ResetTimeout()
 		SetContext(ctx context.Context)
 		ResetContext()
-		GetById(id uint32) (orm.PartnerBalanceShard, error)
+		GetById(id uint32) (*orm.PartnerBalanceShard, error)
 		CreateNew(bll orm.PartnerBalanceShard) error
 		UpdateAllField(update orm.PartnerBalanceShard) error
 		UpdateById(id uint32, update map[string]interface{}) error
@@ -30,21 +31,24 @@ type (
 func (rp PartnerBalanceShard) DB() sql.Connect {
 	return rp.BaseRepo.CN()
 }
-
-func (rp *PartnerBalanceShard) GetById(id uint32) (orm.PartnerBalanceShard, error) {
-	var shard orm.PartnerBalanceShard
+func (rp *PartnerBalanceShard) GetById(id uint32) (*orm.PartnerBalanceShard, error) {
+	var balance orm.PartnerBalanceShard
 
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB().Where("id = ?", id).First(&shard)
-	if rs.Error != nil {
-		return shard, rs.Error
+	rs := rp.DB().Where("id = ?", id).First(&balance)
+	if rs.Error == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
 
-	return shard, nil
+	if rs.Error != nil {
+		return nil, rs.Error
+	}
+
+	return &balance, nil
 }
 
 func (rp *PartnerBalanceShard) CreateNew(bll orm.PartnerBalanceShard) error {

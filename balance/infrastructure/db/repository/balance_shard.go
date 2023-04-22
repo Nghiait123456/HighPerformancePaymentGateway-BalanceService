@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/connect/sql"
 	"github.com/high-performance-payment-gateway/balance-service/balance/infrastructure/db/orm"
+	"gorm.io/gorm"
 )
 
 type (
@@ -20,26 +21,31 @@ type (
 		ResetContext()
 		//  AllBalanceShardActive return ["partner_code"]orm.BalanceShard
 		AllBalanceShardActive() (map[string]orm.BalanceShard, error)
-		GetById(id uint32) (orm.BalanceShard, error)
+		GetById(id uint32) (*orm.BalanceShard, error)
 		CreateNew(bll orm.BalanceShard) error
 		UpdateAllField(update orm.BalanceShard) error
 		UpdateById(id uint32, update map[string]interface{}) error
 	}
 )
 
-func (rp *BalanceShard) GetById(id uint32) (orm.BalanceShard, error) {
-	var balanceShard orm.BalanceShard
+func (rp *BalanceShard) GetById(id uint32) (*orm.BalanceShard, error) {
+	var balance orm.BalanceShard
+
 	rp.BaseRepo.UpdateContext()
 	if rp.BaseRepo.IsHaveCancelFc() {
 		defer rp.BaseRepo.GetCancelFc()
 	}
 
-	rs := rp.DB().Where("id = ?", id).First(&balanceShard)
-	if rs.Error != nil {
-		return balanceShard, rs.Error
+	rs := rp.DB().Where("id = ?", id).First(&balance)
+	if rs.Error == gorm.ErrRecordNotFound {
+		return nil, nil
 	}
 
-	return balanceShard, nil
+	if rs.Error != nil {
+		return nil, rs.Error
+	}
+
+	return &balance, nil
 }
 
 func (rp BalanceShard) DB() sql.Connect {
