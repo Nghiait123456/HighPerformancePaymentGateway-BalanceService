@@ -6,6 +6,7 @@ COPY . .
 RUN apk add build-base
 RUN go install github.com/google/wire/cmd/wire@latest
 RUN cd ./balance/  && wire
+RUN go mod download
 RUN go build -o main main.go
 
 # Run stage
